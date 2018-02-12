@@ -24,6 +24,11 @@
 #   go-tests = true
 #   unused-packages = true
 
+ignored = ["github.com/ethereum/go-ethereum/crypto/secp256k1"]
+
+[[constraint]]
+  name = "github.com/ethereum/go-ethereum"
+  version = "1.7.3"
 
 [[constraint]]
   name = "github.com/gorilla/websocket"
@@ -40,3 +45,4 @@
 [prune]
   go-tests = true
   unused-packages = true
+

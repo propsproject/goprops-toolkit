@@ -3,6 +3,7 @@ package propstoken
 import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/propsproject/go-utils/propstoken/tokengen"
 )
 
@@ -17,11 +18,13 @@ type DelegatedTransfer struct {
 }
 
 // NewPropsTokenClient init global token client var for use
-func NewPropsTokenClient(contractAddr, ipcPath string) (*tokengen.PropsToken, error) {
-	conn, err := ethclient.Dial(ipcPath)
+func NewPropsTokenClient(contractAddr, rpcAddr string) (*tokengen.PropsToken, error) {
+	rpcClient, err := rpc.DialHTTP(rpcAddr)
 	if err != nil {
 		return nil, err
 	}
+
+	conn := ethclient.NewClient(rpcClient)
 
 	propsTokenClient, err := tokengen.NewPropsToken(common.HexToAddress(contractAddr), conn)
 	if err != nil {

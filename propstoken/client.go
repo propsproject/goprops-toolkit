@@ -14,7 +14,6 @@ type DelegatedTransfer struct {
 	Amount    int64  `json:"amount" gencodec:"required"`
 	Fee       int64  `json:"fee" gencodec:"required"`
 	Nonce     int64  `json:"nonce"    gencodec:"required"`
-	From      string `json:"from" gencodec:"required"`
 }
 
 // NewPropsTokenClient init global token client var for use

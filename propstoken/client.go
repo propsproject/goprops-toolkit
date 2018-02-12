@@ -13,7 +13,7 @@ type DelegatedTransfer struct {
 	To        string `json:"to" gencodec:"required"`
 	Amount    int64  `json:"amount" gencodec:"required"`
 	Fee       int64  `json:"fee" gencodec:"required"`
-	Nonce     string `json:"nonce"    gencodec:"required"`
+	Nonce     int64  `json:"nonce"    gencodec:"required"`
 	From      string `json:"from" gencodec:"required"`
 }
 

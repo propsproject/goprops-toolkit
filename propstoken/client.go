@@ -16,8 +16,9 @@ type DelegatedTransfer struct {
 	Nonce     int64  `json:"nonce"    gencodec:"required"`
 }
 
+// PropsClient ...
 type PropsClient struct {
-	*tokengen.PropsToken
+	Token     *tokengen.PropsToken
 	RPCClient *ethclient.Client
 }
 

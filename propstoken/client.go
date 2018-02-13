@@ -16,8 +16,13 @@ type DelegatedTransfer struct {
 	Nonce     int64  `json:"nonce"    gencodec:"required"`
 }
 
+type PropsClient struct {
+	*tokengen.PropsToken
+	RPCClient *ethclient.Client
+}
+
 // NewPropsTokenClient init global token client var for use
-func NewPropsTokenClient(contractAddr, rpcAddr string) (*tokengen.PropsToken, error) {
+func NewPropsTokenClient(contractAddr, rpcAddr string) (*PropsClient, error) {
 	rpcClient, err := rpc.DialHTTP(rpcAddr)
 	if err != nil {
 		return nil, err
@@ -35,5 +40,5 @@ func NewPropsTokenClient(contractAddr, rpcAddr string) (*tokengen.PropsToken, er
 		return nil, err
 	}
 
-	return propsTokenClient, nil
+	return &PropsClient{propsTokenClient, conn}, nil
 }

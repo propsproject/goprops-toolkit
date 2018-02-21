@@ -1,7 +1,6 @@
 package websocket
 
 import (
-	"log"
 	"net/http"
 	"time"
 
@@ -85,14 +84,14 @@ func (c *Client) writePump() {
 }
 
 //RegisterNewClient handles websocket requests from the peer.
-func RegisterNewClient(registry *SocketRegistry, id string, w http.ResponseWriter, r *http.Request) {
+func RegisterNewClient(registry *SocketRegistry, id string, w http.ResponseWriter, r *http.Request) error {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Println(err.Error())
-		panic(err)
+		return err
 	}
 	client := &Client{registry: registry, conn: conn, send: make(chan []byte, 256), id: id}
 	client.registry.RegisterClient(client)
 
 	go client.writePump()
+	return nil
 }

@@ -4,6 +4,7 @@ import (
 	"crypto/sha1"
 	"errors"
 	"fmt"
+	"log"
 	"math/rand"
 	"os"
 	"runtime"
@@ -60,7 +61,8 @@ func Identity() string {
 // Run ...
 func (rc *RabbitConsumerProducer) Run() {
 	if err := rc.Connect(); err != nil {
-		failOnError(err, fmt.Sprintf("[%s]connect error", rc.ConsumerTag))
+		logger.Error(err)
+		log.Println(fmt.Sprintf("[%v]connect error: %v", rc.ConsumerTag, err))
 	}
 	rc.AnnounceQueue()
 	rc.Consume()
@@ -163,7 +165,9 @@ func (rc *RabbitConsumerProducer) AnnounceQueue() error {
 		false,          // noWait
 		nil,            // arguments
 	)
-	failOnError(err, fmt.Sprintf("[%s]Error when calling AnnounceQueue()", rc.ConsumerTag))
+	if err != nil {
+		return fmt.Errorf("Consume: %s", err)
+	}
 
 	return nil
 }
@@ -191,7 +195,7 @@ func (rc *RabbitConsumerProducer) MonitorConn() {
 			for {
 				err := rc.ReConnect(retryTime)
 				if err != nil {
-					failOnError(err, "Reconnecting Error")
+					log.Println(fmt.Sprintf("Reconnecting Error %v", err))
 					retryTime++
 				} else {
 					break
@@ -280,8 +284,9 @@ func (rc *RabbitConsumerProducer) String() string {
 
 func failOnError(errs ...interface{}) {
 	var b []byte
+	fmt.Sprintln(errs)
 	for _, err := range errs {
 		copy(b, []byte(fmt.Sprintf("%v ", err)))
 	}
-	logger.Error(errors.New(string(b)))
+	logger.Info(errors.New(string(b)).Error())
 }

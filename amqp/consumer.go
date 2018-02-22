@@ -245,12 +245,13 @@ func (rc *RabbitConsumerProducer) Consume() {
 }
 
 // NewConsumer ...
-func NewConsumer(uri, exchangeName, exchangeType string, handle func(amqp.Delivery) bool) *RabbitConsumerProducer {
+func NewConsumer(uri, exchangeName, routingKey, exchangeType string, handle func(amqp.Delivery) bool) *RabbitConsumerProducer {
 	consumer := &RabbitConsumerProducer{
 		ConsumerTag:     Identity(),
 		URI:             uri,
 		ExchangeName:    exchangeName,
 		ExchangeType:    exchangeType,
+		RoutingKey:      routingKey,
 		Done:            make(chan error),
 		LastRecoverTime: time.Now().Unix(),
 		Handle:          handle,

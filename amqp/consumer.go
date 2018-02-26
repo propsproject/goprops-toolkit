@@ -69,11 +69,19 @@ func (rc *RabbitConsumerProducer) Run() {
 	rc.Consume()
 }
 
+// RunProducer ...
+func (rc *RabbitConsumerProducer) RunProducer() {
+	if err := rc.Connect(); err != nil {
+		logger.Error(fmt.Errorf("[%v]Connect error: %v", rc.ConsumerTag, err))
+	}
+}
+
 // ReConnect ...
 func (rc *RabbitConsumerProducer) ReConnect(retryTime int) error {
 	rc.Close()
 	time.Sleep(time.Duration(15+rand.Intn(60)+2*retryTime) * time.Second)
 
+	logger.Info(fmt.Sprintf("Attempting Reconnect: %v", rc.ConsumerTag))
 	if err := rc.Connect(); err != nil {
 		return err
 	}

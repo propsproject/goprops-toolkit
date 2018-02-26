@@ -275,7 +275,7 @@ func NewConsumer(uri, exchangeName, routingKey, exchangeType string, handle func
 }
 
 // Publish ...
-func (rc *RabbitConsumerProducer) Publish(payload []byte, headers *map[string]interface{}) {
+func (rc *RabbitConsumerProducer) Publish(payload []byte) {
 	rc.Channel.Publish(
 		rc.ExchangeName, // exchange
 		rc.RoutingKey,   // routing key
@@ -284,7 +284,6 @@ func (rc *RabbitConsumerProducer) Publish(payload []byte, headers *map[string]in
 		amqp.Publishing{
 			ContentType: "application/json",
 			Body:        payload,
-			Headers:     *headers,
 		})
 }
 

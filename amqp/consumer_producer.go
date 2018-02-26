@@ -7,8 +7,10 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"os/signal"
 	"runtime"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	"github.com/propsproject/go-utils/logger"
@@ -298,4 +300,18 @@ func failOnError(errs ...interface{}) {
 		copy(b, []byte(fmt.Sprintf("%v ", err)))
 	}
 	logger.Info(errors.New(string(b)).Error())
+}
+
+func (rc *RabbitConsumerProducer) handleSigTerm() {
+	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, os.Interrupt)
+	signal.Notify(interrupt, syscall.SIGTERM)
+	for {
+		select {
+		case <-interrupt:
+			logger.Info(fmt.Sprintf("Received interrupt signal, closing. Consumer Name: %v, Routing Key: %v, ExchangeName %v ", rc.ConsumerTag, rc.RoutingKey, rc.ExchangeName))
+			rc.Close()
+			os.Exit(0)
+		}
+	}
 }

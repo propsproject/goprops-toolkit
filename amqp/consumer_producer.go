@@ -28,7 +28,7 @@ type ConsumerProducer interface {
 	AnnounceQueue() error
 	Close()
 	Consume()
-	Publish([]byte, *map[string]interface{})
+	Publish([]byte)
 	NewWorker()
 }
 

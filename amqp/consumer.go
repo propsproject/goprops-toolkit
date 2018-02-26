@@ -45,7 +45,7 @@ type RabbitConsumerProducer struct {
 	CurrentStatus   atomic.Value
 	Handle          func(amqp.Delivery) bool
 	Messages        <-chan amqp.Delivery
-	Workers         int
+	Workers         uint64
 }
 
 // Identity ...
@@ -61,10 +61,11 @@ func Identity() string {
 // Run ...
 func (rc *RabbitConsumerProducer) Run() {
 	if err := rc.Connect(); err != nil {
-		logger.Error(err)
-		log.Println(fmt.Sprintf("[%v]connect error: %v", rc.ConsumerTag, err))
+		logger.Error(fmt.Errorf("[%v]Connect error: %v", rc.ConsumerTag, err))
 	}
-	rc.AnnounceQueue()
+	if err := rc.AnnounceQueue(); err != nil {
+		logger.Error(fmt.Errorf("[%v]AnnounceQueue error: %v", rc.ConsumerTag, err))
+	}
 	rc.Consume()
 }
 
@@ -207,7 +208,7 @@ func (rc *RabbitConsumerProducer) MonitorConn() {
 
 // NewWorker ...
 func (rc *RabbitConsumerProducer) NewWorker() {
-	rc.Workers++
+	atomic.AddUint64(&rc.Workers, 1)
 	go func() {
 		for msg := range rc.Messages {
 			if ok := rc.Handle(msg); ok {

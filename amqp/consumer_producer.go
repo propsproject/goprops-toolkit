@@ -21,6 +21,7 @@ const RecoverIntervalTime = 6 * 60
 // ConsumerProducer ...
 type ConsumerProducer interface {
 	Run()
+	RunProducer()
 	String() string
 	Connect() error
 	ReConnect(int) error

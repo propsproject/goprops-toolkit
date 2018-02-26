@@ -9,11 +9,12 @@ import (
 
 //DelegatedTransfer ...
 type DelegatedTransfer struct {
-	Signature string `json:"signature" gencodec:"required"`
-	To        string `json:"to" gencodec:"required"`
-	Amount    int64  `json:"amount" gencodec:"required"`
-	Fee       int64  `json:"fee" gencodec:"required"`
-	Nonce     int64  `json:"nonce"    gencodec:"required"`
+	Signature string  `json:"signature" gencodec:"required"`
+	From      string  `json:"from" gencodec:"required"`
+	To        string  `json:"to" gencodec:"required"`
+	Amount    float64 `json:"amount" gencodec:"required"`
+	Fee       float64 `json:"fee" gencodec:"required"`
+	Nonce     int64   `json:"nonce"    gencodec:"required"`
 }
 
 // PropsClient ...

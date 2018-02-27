@@ -2,6 +2,9 @@ package websocket
 
 import (
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -83,6 +86,19 @@ func (c *Client) writePump() {
 	}
 }
 
+func (c *Client) handleSigTerm() {
+	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, os.Interrupt)
+	signal.Notify(interrupt, syscall.SIGTERM)
+	for {
+		select {
+		case <-interrupt:
+			c.conn.Close()
+			os.Exit(0)
+		}
+	}
+}
+
 //RegisterNewClient handles websocket requests from the peer.
 func RegisterNewClient(registry *SocketRegistry, id string, w http.ResponseWriter, r *http.Request) error {
 	conn, err := upgrader.Upgrade(w, r, nil)
@@ -93,5 +109,6 @@ func RegisterNewClient(registry *SocketRegistry, id string, w http.ResponseWrite
 	client.registry.RegisterClient(client)
 
 	go client.writePump()
+	go client.handleSigTerm()
 	return nil
 }

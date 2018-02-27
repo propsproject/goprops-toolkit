@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/go-utils/logger"
 	"github.com/matryer/resync"
+	"github.com/propsproject/go-utils/logger"
 )
 
 var registry *SocketRegistry
@@ -102,6 +102,6 @@ func (r *SocketRegistry) RegisterNewClient(registry *SocketRegistry, id string, 
 		return nil
 	}
 
-	logger.info("Client already registered")
+	logger.Info("Client already registered")
 	return nil
 }

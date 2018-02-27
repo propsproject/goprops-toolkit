@@ -1,7 +1,7 @@
 package websocket
 
 import (
-	"net/http"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -93,22 +93,9 @@ func (c *Client) handleSigTerm() {
 	for {
 		select {
 		case <-interrupt:
+			log.Println("Closing connection")
 			c.conn.Close()
 			os.Exit(0)
 		}
 	}
-}
-
-//RegisterNewClient handles websocket requests from the peer.
-func RegisterNewClient(registry *SocketRegistry, id string, w http.ResponseWriter, r *http.Request) error {
-	conn, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		return err
-	}
-	client := &Client{registry: registry, conn: conn, send: make(chan []byte, 256), id: id}
-	client.registry.RegisterClient(client)
-
-	go client.writePump()
-	go client.handleSigTerm()
-	return nil
 }

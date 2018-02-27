@@ -1,8 +1,10 @@
 package websocket
 
 import (
+	"net/http"
 	"sync"
 
+	"github.com/go-utils/logger"
 	"github.com/matryer/resync"
 )
 
@@ -82,4 +84,24 @@ func (r *SocketRegistry) Run() {
 			}
 		}
 	}
+}
+
+//RegisterNewClient handles websocket requests from the peer.
+func (r *SocketRegistry) RegisterNewClient(registry *SocketRegistry, id string, w http.ResponseWriter, req *http.Request) error {
+
+	if _, ok := r.GetClient(id); !ok {
+		conn, err := upgrader.Upgrade(w, req, nil)
+		if err != nil {
+			return err
+		}
+		client := &Client{registry: registry, conn: conn, send: make(chan []byte, 256), id: id}
+		client.registry.RegisterClient(client)
+
+		go client.writePump()
+		go client.handleSigTerm()
+		return nil
+	}
+
+	logger.info("Client already registered")
+	return nil
 }

@@ -99,6 +99,7 @@ func NewPusherRegistry(appID, key, secret, cluster string, events map[string]Eve
 		registry = &SocketRegistry{
 			PusherConn: pusherClient,
 			Clients:    new(sync.Map),
+			Events:     new(sync.Map),
 		}
 
 		registry.RegisterEvents(events)

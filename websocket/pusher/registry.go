@@ -14,7 +14,7 @@ var onceRegistry resync.Once
 type SocketRegistry struct {
 	PusherConn pusher.Client
 	Clients    *sync.Map
-	Triggers   *sync.Map
+	Events     *sync.Map
 }
 
 // Payload ...
@@ -26,10 +26,10 @@ type Payload struct {
 	Response chan bool
 }
 
-// RegisterTriggers add triggers to listen and broadcast for
-func (r *SocketRegistry) RegisterTriggers(triggers map[string]Trigger) {
-	for key, trigger := range triggers {
-		r.Triggers.Store(key, trigger)
+// RegisterEvents add Events to listen and broadcast for
+func (r *SocketRegistry) RegisterEvents(events map[string]Event) {
+	for key, event := range events {
+		r.Events.Store(key, event)
 	}
 }
 
@@ -51,13 +51,13 @@ func (r *SocketRegistry) GetClient(id string) (*RegistryClient, bool) {
 	return nil, false
 }
 
-// NewWorker starts a new worker to listen for each pusher trigger
-func (r *SocketRegistry) NewWorker(trigger Trigger) {
+// NewWorker starts a new worker to listen for each pusher Event
+func (r *SocketRegistry) NewWorker(event Event) {
 	for {
 		select {
-		case payload := <-trigger.Broadcast:
+		case payload := <-event.Broadcast:
 			if client, ok := r.GetClient(payload.ClientID); ok {
-				if ok := client.Send(payload.Data, trigger.Name); !ok {
+				if ok := client.Send(payload.Data, event.Name); !ok {
 					payload.Response <- false
 				}
 			} else {
@@ -67,27 +67,27 @@ func (r *SocketRegistry) NewWorker(trigger Trigger) {
 	}
 }
 
-// DelegatePush send on correct trigger chan
-func (r *SocketRegistry) DelegatePush(triggerName string, payload Payload) {
-	if t, ok := r.Triggers.Load(triggerName); ok {
-		trigger := t.(Trigger)
-		trigger.Broadcast <- payload
+// DelegateEvent send on correct Event chan
+func (r *SocketRegistry) DelegateEvent(eventName string, payload Payload) {
+	if t, ok := r.Events.Load(eventName); ok {
+		Event := t.(Event)
+		Event.Broadcast <- payload
 	} else {
-		// trigger not found
+		// Event not found
 		payload.Response <- false
 	}
 }
 
-// Run registry start a new worker for each trigger and http server for payloads
+// Run registry start a new worker for each Event and http server for payloads
 func (r *SocketRegistry) Run() {
-	r.Triggers.Range(func(key, value interface{}) bool {
-		go r.NewWorker(value.(Trigger))
+	r.Events.Range(func(key, value interface{}) bool {
+		go r.NewWorker(value.(Event))
 		return true
 	})
 }
 
 // NewPusherRegistry creates a new pusher registry
-func NewPusherRegistry(appID, key, secret, cluster string, triggers map[string]Trigger) *SocketRegistry {
+func NewPusherRegistry(appID, key, secret, cluster string, events map[string]Event) *SocketRegistry {
 	onceRegistry.Do(func() {
 		pusherClient := pusher.Client{
 			AppId:   appID,
@@ -101,7 +101,7 @@ func NewPusherRegistry(appID, key, secret, cluster string, triggers map[string]T
 			Clients:    new(sync.Map),
 		}
 
-		registry.RegisterTriggers(triggers)
+		registry.RegisterEvents(events)
 	})
 
 	return registry

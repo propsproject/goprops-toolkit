@@ -14,7 +14,7 @@ var onceRegistry resync.Once
 type SocketRegistry struct {
 	PusherConn pusher.Client
 	Clients    *sync.Map
-	Triggers   []Trigger
+	Triggers   *sync.Map
 }
 
 // Payload ...
@@ -27,8 +27,10 @@ type Payload struct {
 }
 
 // RegisterTriggers add triggers to listen and broadcast for
-func (r *SocketRegistry) RegisterTriggers(triggers []Trigger) {
-	r.Triggers = triggers
+func (r *SocketRegistry) RegisterTriggers(triggers map[string]Trigger) {
+	for key, trigger := range triggers {
+		r.Triggers.Store(key, trigger)
+	}
 }
 
 // RegisterClient registers new client with the clients map
@@ -65,15 +67,27 @@ func (r *SocketRegistry) NewWorker(trigger Trigger) {
 	}
 }
 
-// Run registry start a new worker for each trigger and http server for payloads
-func (r *SocketRegistry) Run() {
-	for _, trigger := range r.Triggers {
-		go r.NewWorker(trigger)
+// DelegatePush send on correct trigger chan
+func (r *SocketRegistry) DelegatePush(triggerName string, payload Payload) {
+	if t, ok := r.Triggers.Load(triggerName); ok {
+		trigger := t.(Trigger)
+		trigger.Broadcast <- payload
+	} else {
+		// trigger not found
+		payload.Response <- false
 	}
 }
 
+// Run registry start a new worker for each trigger and http server for payloads
+func (r *SocketRegistry) Run() {
+	r.Triggers.Range(func(key, value interface{}) bool {
+		go r.NewWorker(value.(Trigger))
+		return true
+	})
+}
+
 // NewPusherRegistry creates a new pusher registry
-func NewPusherRegistry(appID, key, secret, cluster string, triggers []Trigger) *SocketRegistry {
+func NewPusherRegistry(appID, key, secret, cluster string, triggers map[string]Trigger) *SocketRegistry {
 	onceRegistry.Do(func() {
 		pusherClient := pusher.Client{
 			AppId:   appID,

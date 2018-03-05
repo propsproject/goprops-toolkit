@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
-	"time"
 
 	lgr "github.com/propsproject/go-utils/logger/v2"
 )
@@ -13,7 +12,7 @@ var logger = lgr.Logger
 
 // WebhookPayload ...
 type WebhookPayload struct {
-	TimeMS time.Time      `json:"time_ms"`
+	TimeMS string         `json:"time_ms"`
 	Events []EventPayload `json:"events"`
 }
 

@@ -250,9 +250,10 @@ func maxParallelism() int {
 }
 
 // Consume ...
-func (rc *RabbitConsumerProducer) Consume() {
-	threads := maxParallelism()
-	log.Println("THREADS", threads)
+func (rc *RabbitConsumerProducer) Consume(threads int) {
+	if threads < 1 {
+		threads = 1
+	}
 	for {
 		for i := 0; i < threads; i++ {
 			rc.NewWorker()

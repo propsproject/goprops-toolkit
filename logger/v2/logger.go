@@ -78,11 +78,13 @@ func init() {
 	)
 
 	var opts []zap.Option
-	opts = append(opts, zap.Fields(zap.Int("pid", os.Getpid())))
-	opts = append(opts, zap.Fields(zap.String("exe", path.Base(os.Args[0]))))
+	opts = append(opts,
+		zap.Fields(zap.Int("pid", os.Getpid())),
+		zap.Fields(zap.String("exe", path.Base(os.Args[0]))),
+	)
+
 	Logger = &LoggerWrapper{
 		zapLogger: zap.New(core, opts...),
 	}
 	defer Logger.zapLogger.Sync()
-
 }

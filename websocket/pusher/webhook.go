@@ -3,6 +3,7 @@ package pusher
 import (
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"time"
 
@@ -28,12 +29,17 @@ type EventPayload struct {
 func (r *SocketRegistry) HandlePrecenseWebHook(req *http.Request) error {
 	var payload WebhookPayload
 	b, err := ioutil.ReadAll(req.Body)
+	log.Println(string(b))
 	if err != nil {
 		logger.Error(err)
 		return err
 	}
 
-	json.Unmarshal(b, &payload)
+	err = json.Unmarshal(b, &payload)
+	if err != nil {
+		logger.Error(err)
+		return err
+	}
 
 	for _, event := range payload.Events {
 		client := &RegistryClient{

@@ -62,14 +62,14 @@ func Identity() string {
 }
 
 // Run ...
-func (rc *RabbitConsumerProducer) Run(threads int) {
+func (rc *RabbitConsumerProducer) Run() {
 	if err := rc.Connect(); err != nil {
 		logger.Error(fmt.Errorf("[%v]Connect error: %v", rc.ConsumerTag, err))
 	}
 	if err := rc.AnnounceQueue(); err != nil {
 		logger.Error(fmt.Errorf("[%v]AnnounceQueue error: %v", rc.ConsumerTag, err))
 	}
-	rc.Consume(threads)
+	rc.Consume()
 }
 
 // RunProducer ...
@@ -250,10 +250,9 @@ func maxParallelism() int {
 }
 
 // Consume ...
-func (rc *RabbitConsumerProducer) Consume(threads int) {
-	if threads < 1 {
-		threads = 1
-	}
+func (rc *RabbitConsumerProducer) Consume() {
+	threads := 1
+
 	for {
 		for i := 0; i < threads; i++ {
 			rc.NewWorker()

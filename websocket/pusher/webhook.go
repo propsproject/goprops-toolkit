@@ -12,7 +12,7 @@ var logger = lgr.Logger
 
 // WebhookPayload ...
 type WebhookPayload struct {
-	TimeMS string         `json:"time_ms"`
+	TimeMS int64          `json:"time_ms"`
 	Events []EventPayload `json:"events"`
 }
 

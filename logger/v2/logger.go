@@ -20,6 +20,12 @@ type LoggerWrapper struct {
 	zapLogger *zap.SugaredLogger
 }
 
+// Field convience struct for logs with fields
+type Field struct {
+	Key   string
+	Value interface{}
+}
+
 // Logger ...
 var Logger *LoggerWrapper
 
@@ -56,6 +62,16 @@ func (l *LoggerWrapper) unpackArgs(args map[string]interface{}) ([]interface{}, 
 		unpacked = append(unpacked, key, val)
 	}
 	return unpacked, len(unpacked) > 0
+}
+
+// Fields creates fields map for log message
+func Fields(f ...Field) map[string]interface{} {
+	fields := make(map[string]interface{})
+	for _, val := range f {
+		fields[val.Key] = val.Value
+	}
+
+	return fields
 }
 
 func init() {

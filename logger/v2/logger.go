@@ -42,12 +42,12 @@ func (l *LoggerWrapper) Warn(msg string, data map[string]interface{}) {
 }
 
 // Error ...
-func (l *LoggerWrapper) Error(msg string, data map[string]interface{}) {
+func (l *LoggerWrapper) Error(err error, data map[string]interface{}) {
 	if args, ok := l.unpackArgs(data); ok {
-		l.zapLogger.Errorf(msg, args)
+		l.zapLogger.Errorf(err.Error(), args)
 		return
 	}
-	l.zapLogger.Error(msg)
+	l.zapLogger.Error(err.Error())
 }
 
 func (l *LoggerWrapper) unpackArgs(args map[string]interface{}) ([]interface{}, bool) {

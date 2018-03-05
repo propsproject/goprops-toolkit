@@ -75,7 +75,7 @@ func Fields(f ...Field) map[string]interface{} {
 }
 
 func init() {
-	cfg := zap.NewProductionConfig()
+	cfg := zap.NewDevelopmentConfig()
 	cfg.OutputPaths = []string{devLogOut, stderr}
 	cfg.DisableCaller = true
 	cfg.DisableStacktrace = true

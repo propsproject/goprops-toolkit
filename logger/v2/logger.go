@@ -44,7 +44,7 @@ func (l *LoggerWrapper) Error(err error, data ...zapcore.Field) {
 }
 
 // Fields creates fields map for log message
-func (l *LoggerWrapper) Fields(f ...Field) []zapcore.Field {
+func Fields(f ...Field) []zapcore.Field {
 	var fields []zapcore.Field
 	for _, field := range f {
 		fields = append(fields, zap.String(field.Key, field.Value))

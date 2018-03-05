@@ -29,18 +29,18 @@ type Field struct {
 var Logger *LoggerWrapper
 
 // Info ...
-func (l *LoggerWrapper) Info(msg string, data ...zapcore.Field) {
-	l.zapLogger.Info(msg, data...)
+func (l *LoggerWrapper) Info(msg string, data ...Field) {
+	l.zapLogger.Info(msg, Fields(data...)...)
 }
 
 // Warn ...
-func (l *LoggerWrapper) Warn(msg string, data ...zapcore.Field) {
-	l.zapLogger.Warn(msg, data...)
+func (l *LoggerWrapper) Warn(msg string, data ...Field) {
+	l.zapLogger.Warn(msg, Fields(data...)...)
 }
 
 // Error ...
-func (l *LoggerWrapper) Error(err error, data ...zapcore.Field) {
-	l.zapLogger.Error(err.Error(), data...)
+func (l *LoggerWrapper) Error(err error, data ...Field) {
+	l.zapLogger.Error(err.Error(), Fields(data...)...)
 }
 
 // Fields creates fields map for log message

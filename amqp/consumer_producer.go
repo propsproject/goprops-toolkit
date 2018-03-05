@@ -62,14 +62,14 @@ func Identity() string {
 }
 
 // Run ...
-func (rc *RabbitConsumerProducer) Run() {
+func (rc *RabbitConsumerProducer) Run(threads int) {
 	if err := rc.Connect(); err != nil {
 		logger.Error(fmt.Errorf("[%v]Connect error: %v", rc.ConsumerTag, err))
 	}
 	if err := rc.AnnounceQueue(); err != nil {
 		logger.Error(fmt.Errorf("[%v]AnnounceQueue error: %v", rc.ConsumerTag, err))
 	}
-	rc.Consume()
+	rc.Consume(threads)
 }
 
 // RunProducer ...

@@ -61,19 +61,6 @@ var lowPriority = zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
 	return lvl < zapcore.ErrorLevel
 })
 
-var jsonDebugging = zapcore.AddSync(ioutil.Discard)
-var jsonErrors = zapcore.AddSync(ioutil.Discard)
-var consoleDebugging = zapcore.Lock(os.Stdout)
-var consoleErrors = zapcore.Lock(os.Stderr)
-var jsonEncoder = zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig())
-var consoleEncoder = zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig())
-var core = zapcore.NewTee(
-	zapcore.NewCore(jsonEncoder, jsonErrors, highPriority),
-	zapcore.NewCore(consoleEncoder, consoleErrors, highPriority),
-	zapcore.NewCore(jsonEncoder, jsonDebugging, lowPriority),
-	zapcore.NewCore(consoleEncoder, consoleDebugging, lowPriority),
-)
-
 func init() {
 	jsonDebugging := zapcore.AddSync(ioutil.Discard)
 	jsonErrors := zapcore.AddSync(ioutil.Discard)
@@ -93,8 +80,9 @@ func init() {
 	var opts []zap.Option
 	opts = append(opts, zap.Fields(zap.Int("pid", os.Getpid())))
 	opts = append(opts, zap.Fields(zap.String("exe", path.Base(os.Args[0]))))
-
 	Logger = &LoggerWrapper{
 		zapLogger: zap.New(core, opts...),
 	}
+	defer Logger.zapLogger.Sync()
+
 }

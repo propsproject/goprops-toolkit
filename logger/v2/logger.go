@@ -81,7 +81,7 @@ func init() {
 	cfg.DisableStacktrace = true
 	cfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 
-	var initialFields map[string]interface{}
+	initialFields := make(map[string]interface{})
 	initialFields["PID"] = os.Getpid()
 	initialFields["EXE"] = path.Base(os.Args[0])
 	cfg.InitialFields = initialFields

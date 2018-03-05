@@ -3,6 +3,7 @@ package v2
 import (
 	"io/ioutil"
 	"os"
+	"path"
 
 	"go.uber.org/zap/zapcore"
 
@@ -82,14 +83,18 @@ func init() {
 	jsonEncoder := zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig())
 	consoleEncoder := zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig())
 
-	core = zapcore.NewTee(
+	core := zapcore.NewTee(
 		zapcore.NewCore(jsonEncoder, jsonErrors, highPriority),
 		zapcore.NewCore(consoleEncoder, consoleErrors, highPriority),
 		zapcore.NewCore(jsonEncoder, jsonDebugging, lowPriority),
 		zapcore.NewCore(consoleEncoder, consoleDebugging, lowPriority),
 	)
 
+	var opts []zap.Option
+	opts = append(opts, zap.Fields(zap.Int("pid", os.Getpid())))
+	opts = append(opts, zap.Fields(zap.String("exe", path.Base(os.Args[0]))))
+
 	Logger = &LoggerWrapper{
-		zapLogger: zap.New(core),
+		zapLogger: zap.New(core, opts...),
 	}
 }

@@ -5,7 +5,11 @@ import (
 	"io/ioutil"
 	"net/http"
 	"time"
+
+	lgr "github.com/propsproject/go-utils/logger/v2"
 )
+
+var logger = lgr.Logger
 
 // WebhookPayload ...
 type WebhookPayload struct {
@@ -25,6 +29,7 @@ func (r *SocketRegistry) HandlePrecenseWebHook(req *http.Request) error {
 	var payload WebhookPayload
 	b, err := ioutil.ReadAll(req.Body)
 	if err != nil {
+		logger.Error(err)
 		return err
 	}
 
@@ -38,8 +43,10 @@ func (r *SocketRegistry) HandlePrecenseWebHook(req *http.Request) error {
 		}
 		switch event.Name {
 		case "member_added":
+			logger.Info("Registering new client to pusher: ", lgr.Field{"ID", client.ID}, lgr.Field{"ChannelName", client.ChannelName})
 			registry.RegisterClient(client)
 		default:
+			logger.Info("UnRegistering new client to pusher: ", lgr.Field{"ID", client.ID}, lgr.Field{"ChannelName", client.ChannelName})
 			registry.UnRegisterClient(client)
 		}
 	}

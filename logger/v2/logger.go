@@ -3,7 +3,6 @@ package v2
 import (
 	"io/ioutil"
 	"os"
-	"path"
 
 	"go.uber.org/zap/zapcore"
 
@@ -77,14 +76,14 @@ func init() {
 		zapcore.NewCore(consoleEncoder, consoleDebugging, lowPriority),
 	)
 
-	var opts []zap.Option
-	opts = append(opts,
-		zap.Fields(zap.Int("pid", os.Getpid())),
-		zap.Fields(zap.String("exe", path.Base(os.Args[0]))),
-	)
+	// var opts []zap.Option
+	// opts = append(opts,
+	// 	zap.Fields(zap.Int("pid", os.Getpid())),
+	// 	zap.Fields(zap.String("exe", path.Base(os.Args[0]))),
+	// )
 
 	Logger = &LoggerWrapper{
-		zapLogger: zap.New(core, opts...),
+		zapLogger: zap.New(core),
 	}
 	defer Logger.zapLogger.Sync()
 }

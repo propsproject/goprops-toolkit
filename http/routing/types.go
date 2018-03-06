@@ -24,7 +24,7 @@ func (r *Route) String() string {
 
 // GetURI ...
 func (r *Route) GetURI() string {
-	return fmt.Sprintf("%v/%v/%v", r.NameSpace, r.Version, r.ResourcePath)
+	return fmt.Sprintf("%v/%v%v", r.NameSpace, r.Version, r.ResourcePath)
 }
 
 // Routes ...

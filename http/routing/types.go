@@ -32,8 +32,9 @@ type Routes []Route
 
 func (r *Routes) String() string {
 	var buffer bytes.Buffer
+	buffer.WriteString("Routes\n")
 	for _, route := range *r {
-		buffer.WriteString(fmt.Sprintf("\t%v\n", route))
+		buffer.WriteString(fmt.Sprintf("\t%v\n", route.String()))
 	}
 
 	return buffer.String()

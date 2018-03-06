@@ -67,7 +67,10 @@ func init() {
 	consoleErrors := zapcore.Lock(os.Stderr)
 
 	jsonEncoder := zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig())
-	consoleEncoder := zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig())
+
+	config := zap.NewDevelopmentConfig()
+	config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+	consoleEncoder := zapcore.NewConsoleEncoder(config.EncoderConfig)
 
 	core := zapcore.NewTee(
 		zapcore.NewCore(jsonEncoder, jsonErrors, highPriority),

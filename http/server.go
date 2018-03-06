@@ -22,7 +22,7 @@ type Router struct {
 }
 
 //NewRouter returns a new router
-func NewRouter(routes routing.Routes, config map[string]string) *Router {
+func NewRouter(routes routing.Routes, config map[string]string, logger *lgr.LoggerWrapper) *Router {
 	port, _ := strconv.Atoi(config["port"])
 	addr := fmt.Sprintf(":%s", config["port"])
 	router := &Router{
@@ -30,7 +30,7 @@ func NewRouter(routes routing.Routes, config map[string]string) *Router {
 		addr:   addr,
 		routes: append(routes, routing.DefaultRoutes...),
 		port:   port,
-		logger: lgr.Logger,
+		logger: logger,
 	}
 
 	//TODO: setup proper CORS configuration

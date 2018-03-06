@@ -1,2 +1,3 @@
 # go-utils
-Golang utility packages
+
+Light wrapper packages and utilities

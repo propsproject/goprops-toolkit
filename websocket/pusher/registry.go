@@ -3,7 +3,6 @@ package pusher
 import (
 	"sync"
 
-	"github.com/ethereum/go-ethereum/log"
 	"github.com/pusher/pusher-http-go"
 )
 
@@ -53,7 +52,6 @@ func (r *SocketRegistry) GetClient(id string) (*RegistryClient, bool) {
 
 // NewWorker starts a new worker to listen for each pusher Event
 func (r *SocketRegistry) NewWorker(event Event) {
-	log.Info("Starting registry worker " + event.Name)
 	for {
 		select {
 		case payload := <-event.Broadcast:

@@ -34,10 +34,8 @@ func (r *SocketRegistry) HandlePrecenseWebHook(req *http.Request) error {
 		}
 		switch event.Name {
 		case "member_added":
-			logger.Info("Registering new client to pusher: ", lgr.Field{"ID", client.ID}, lgr.Field{"ChannelName", client.ChannelName})
 			registry.RegisterClient(client)
 		case "member_removed":
-			logger.Info("UnRegistering new client to pusher: ", lgr.Field{"ID", client.ID}, lgr.Field{"ChannelName", client.ChannelName})
 			registry.UnRegisterClient(client)
 		}
 	}

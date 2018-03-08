@@ -6,26 +6,14 @@ import (
 	"net/http"
 
 	lgr "github.com/propsproject/go-utils/logger/v2"
+	pusher "github.com/pusher/pusher-http-go"
 )
 
 var logger = lgr.Logger
 
-// WebhookPayload ...
-type WebhookPayload struct {
-	TimeMS int64          `json:"time_ms"`
-	Events []EventPayload `json:"events"`
-}
-
-// EventPayload either member added or removed
-type EventPayload struct {
-	Name    string `json:"name"`
-	Channel string `json:"channel"`
-	UserID  string `json:"user_id"`
-}
-
 // HandlePrecenseWebHook function to handle member_added & member_removed pusher webhook
 func (r *SocketRegistry) HandlePrecenseWebHook(req *http.Request) error {
-	var payload WebhookPayload
+	var payload pusher.Webhook
 	b, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		logger.Error(err)
@@ -41,14 +29,14 @@ func (r *SocketRegistry) HandlePrecenseWebHook(req *http.Request) error {
 	for _, event := range payload.Events {
 		client := &RegistryClient{
 			Registry:    registry,
-			ID:          event.UserID,
+			ID:          event.UserId,
 			ChannelName: event.Channel,
 		}
 		switch event.Name {
 		case "member_added":
 			logger.Info("Registering new client to pusher: ", lgr.Field{"ID", client.ID}, lgr.Field{"ChannelName", client.ChannelName})
 			registry.RegisterClient(client)
-		default:
+		case "member_removed":
 			logger.Info("UnRegistering new client to pusher: ", lgr.Field{"ID", client.ID}, lgr.Field{"ChannelName", client.ChannelName})
 			registry.UnRegisterClient(client)
 		}

@@ -3,12 +3,11 @@ package pusher
 import (
 	"sync"
 
-	"github.com/matryer/resync"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/pusher/pusher-http-go"
 )
 
 var registry *SocketRegistry
-var onceRegistry resync.Once
 
 // SocketRegistry ...
 type SocketRegistry struct {
@@ -35,6 +34,7 @@ func (r *SocketRegistry) RegisterEvents(events map[string]Event) {
 
 // RegisterClient registers new client with the clients map
 func (r *SocketRegistry) RegisterClient(c *RegistryClient) {
+	c.PusherConn = &r.PusherConn
 	r.Clients.Store(c.ID, c)
 }
 
@@ -53,6 +53,7 @@ func (r *SocketRegistry) GetClient(id string) (*RegistryClient, bool) {
 
 // NewWorker starts a new worker to listen for each pusher Event
 func (r *SocketRegistry) NewWorker(event Event) {
+	log.Info("Starting registry worker " + event.Name)
 	for {
 		select {
 		case payload := <-event.Broadcast:
@@ -88,22 +89,20 @@ func (r *SocketRegistry) Run() {
 
 // NewPusherRegistry creates a new pusher registry
 func NewPusherRegistry(appID, key, secret, cluster string, events map[string]Event) *SocketRegistry {
-	onceRegistry.Do(func() {
-		pusherClient := pusher.Client{
-			AppId:   appID,
-			Key:     key,
-			Secret:  secret,
-			Cluster: cluster,
-		}
+	pusherClient := pusher.Client{
+		AppId:   appID,
+		Key:     key,
+		Secret:  secret,
+		Cluster: cluster,
+	}
 
-		registry = &SocketRegistry{
-			PusherConn: pusherClient,
-			Clients:    new(sync.Map),
-			Events:     new(sync.Map),
-		}
+	registry = &SocketRegistry{
+		PusherConn: pusherClient,
+		Clients:    new(sync.Map),
+		Events:     new(sync.Map),
+	}
 
-		registry.RegisterEvents(events)
-	})
+	registry.RegisterEvents(events)
 
 	return registry
 }

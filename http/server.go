@@ -53,6 +53,8 @@ func (r *Router) registerRoutes() {
 			r.mux.HandleFunc(pat.Put(route.GetURI()), route.HandlerFunc)
 		case "DELETE":
 			r.mux.HandleFunc(pat.Delete(route.GetURI()), route.HandlerFunc)
+		case "OPTIONS":
+			r.mux.HandleFunc(pat.Options(route.GetURI()), route.HandlerFunc)
 		default:
 			err := fmt.Errorf("Unsupported method type (%v) on route (%v), supported methods are GET POST PUT DELETE UPDATE", route.Method, route.Name)
 			panic(err)

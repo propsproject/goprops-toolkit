@@ -268,14 +268,12 @@ func maxParallelism() int {
 
 // Consume ...
 func (rc *RabbitConsumerProducer) Consume() {
-	threads := 1
+	threads := maxParallelism()
 
-	for {
-		for i := 0; i < threads; i++ {
-			rc.NewWorker()
-		}
-		go rc.MonitorConn()
+	for i := 0; i < threads; i++ {
+		rc.NewWorker()
 	}
+	go rc.MonitorConn()
 }
 
 // NewConsumer ...

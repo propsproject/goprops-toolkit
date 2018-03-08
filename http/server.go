@@ -36,6 +36,7 @@ func NewRouter(routes routing.Routes, config map[string]string, logger *lgr.Logg
 	//TODO: setup proper CORS configuration
 	router.mux.Use(cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},
+		AllowedHeaders: []string{"*"},
 	}).Handler)
 
 	router.registerRoutes()

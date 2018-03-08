@@ -10,5 +10,5 @@ needed behind the scenes. For example look at the pusher package. This package s
 Using the pusher package as an example, it is pretty easy to simulate a near real environment without having to have your client application running. We use ngrok to tunnel http request to our localhost machines, this allows us to handle the pusher webhooks and see whats happening locally in real time adding faster development time, ngrok also provides the ability to replay request. Next all we needed was simple HTML and JS, using JSBin we were able to make pusher do "stuff" and make sure our backend code is functioning as intended.
 
 - [https://ngrok.com/](ngrok)
-- [https://gist.github.com/kc1116/6e650f0ac5b7e4ce5fbd29e3bdeb22a1](jsbin)
-- [https://pusher.com/docs/webhooks#member_added](pusher)
+- [https://gist.github.com/kc1116/6e650f0ac5b7e4ce5fbd29e3bdeb22a1](gist) use for jsbin
+- [https://pusher.com/docs](pusher)

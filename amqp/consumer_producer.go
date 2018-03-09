@@ -24,8 +24,8 @@ const RecoverIntervalTime = 6 * 60
 
 // ConsumerProducer ...
 type ConsumerProducer interface {
-	Run()
-	RunProducer()
+	Run() (bool, error)
+	RunProducer() (bool, error)
 	String() string
 	Connect() error
 	ReConnect(int) error
@@ -59,7 +59,7 @@ type RabbitConsumerProducer struct {
 // PublishBuffer ...
 type PublishBuffer struct {
 	BufferChan chan []byte
-	Stop       chan bool
+	Flush      chan bool
 	Buffer     []([]byte)
 }
 
@@ -74,7 +74,7 @@ func Identity() string {
 }
 
 // Run ...
-func (rc *RabbitConsumerProducer) Run() {
+func (rc *RabbitConsumerProducer) Run() (bool, error) {
 	rc.ChannelReady.Store(false)
 
 	if err := rc.Connect(); err != nil {
@@ -83,6 +83,7 @@ func (rc *RabbitConsumerProducer) Run() {
 			lgr.Field{"error", err.Error()},
 			lgr.Field{"consumer-tag", rc.ConsumerTag},
 		)
+		return false, err
 	}
 	if err := rc.AnnounceQueue(); err != nil {
 		e := fmt.Errorf("RabbitMQ consumer announce error")
@@ -90,27 +91,33 @@ func (rc *RabbitConsumerProducer) Run() {
 			lgr.Field{"error", err.Error()},
 			lgr.Field{"consumer-tag", rc.ConsumerTag},
 		)
+		return false, err
 	}
+
 	rc.Consume()
-	rc.RunPublishBuffer()
-	for {
-		rc.Logger.Info("Waiting for channel")
-		if rc.Channel != nil {
-			rc.ChannelReady.Store(true)
-			rc.PublishBuffer.Stop <- true
-			break
-		}
-	}
+	return rc.waitForCh(), nil
 }
 
 // RunProducer ...
-func (rc *RabbitConsumerProducer) RunProducer() {
+func (rc *RabbitConsumerProducer) RunProducer() (bool, error) {
 	if err := rc.Connect(); err != nil {
 		e := fmt.Errorf("RabbitMQ Consumer run producer error")
 		rc.Logger.Error(e,
 			lgr.Field{"error", err.Error()},
 			lgr.Field{"consumer-tag", rc.ConsumerTag},
 		)
+		return false, err
+	}
+
+	return rc.waitForCh(), nil
+}
+
+func (rc *RabbitConsumerProducer) waitForCh() bool {
+	for {
+		if rc.Channel != nil {
+			rc.ChannelReady.Store(true)
+			return true
+		}
 	}
 }
 
@@ -143,14 +150,15 @@ func (rc *RabbitConsumerProducer) Connect() error {
 		for {
 			select {
 			case err := <-rc.Conn.NotifyClose(make(chan *amqp.Error)):
-				rc.Logger.Warn("RabbitMQ connection closed",
-					lgr.Field{"error", err.Error()},
-					lgr.Field{"reason", err.Reason},
-					lgr.Field{"code", strconv.Itoa(err.Code)},
-					lgr.Field{"consumer-tag", rc.ConsumerTag},
-				)
-				// Let Handle know it's not time to reconnect
-				rc.Done <- errors.New("Channel Closed")
+				if err != nil {
+					rc.Logger.Warn("RabbitMQ connection closed",
+						lgr.Field{"reason", fmt.Sprintf("%v", err.Reason)},
+						lgr.Field{"code", fmt.Sprintf("%v", strconv.Itoa(err.Code))},
+						lgr.Field{"consumer-tag", rc.ConsumerTag},
+					)
+					// Let Handle know it's not time to reconnect
+					rc.Done <- errors.New("Channel Closed")
+				}
 			}
 		}
 	}()
@@ -305,16 +313,12 @@ func (rc *RabbitConsumerProducer) Consume() {
 // NewConsumer ...
 func NewConsumer(uri, exchangeName, routingKey, exchangeType string, handle func(amqp.Delivery) bool, logger *lgr.LoggerWrapper) *RabbitConsumerProducer {
 	consumer := &RabbitConsumerProducer{
-		ConsumerTag:  Identity(),
-		URI:          uri,
-		ExchangeName: exchangeName,
-		ExchangeType: exchangeType,
-		RoutingKey:   routingKey,
-		Done:         make(chan error),
-		PublishBuffer: PublishBuffer{
-			BufferChan: make(chan []byte),
-			Stop:       make(chan bool),
-		},
+		ConsumerTag:     Identity(),
+		URI:             uri,
+		ExchangeName:    exchangeName,
+		ExchangeType:    exchangeType,
+		RoutingKey:      routingKey,
+		Done:            make(chan error),
 		LastRecoverTime: time.Now().Unix(),
 		Handle:          handle,
 		Logger:          logger,
@@ -324,39 +328,15 @@ func NewConsumer(uri, exchangeName, routingKey, exchangeType string, handle func
 
 // Publish ...
 func (rc *RabbitConsumerProducer) Publish(payload []byte) {
-	if rc.ChannelReady.Load() != nil {
-		if rc.ChannelReady.Load().(bool) {
-			rc.Channel.Publish(
-				rc.ExchangeName, // exchange
-				rc.RoutingKey,   // routing key
-				false,           // mandatory
-				false,           // immediate
-				amqp.Publishing{
-					ContentType: "application/json",
-					Body:        payload,
-				})
-
-			return
-		}
-	}
-
-	rc.Logger.Warn("Not Ready Stashing This")
-	rc.PublishBuffer.BufferChan <- payload
-}
-
-// RunPublishBuffer ...
-func (rc *RabbitConsumerProducer) RunPublishBuffer() {
-	go func() {
-		for {
-			select {
-			case payload := <-rc.PublishBuffer.BufferChan:
-				rc.PublishBuffer.Buffer = append(rc.PublishBuffer.Buffer, payload)
-			case <-rc.PublishBuffer.Stop:
-				rc.Logger.Info("Stopping")
-				return
-			}
-		}
-	}()
+	rc.Channel.Publish(
+		rc.ExchangeName, // exchange
+		rc.RoutingKey,   // routing key
+		false,           // mandatory
+		false,           // immediate
+		amqp.Publishing{
+			ContentType: "application/json",
+			Body:        payload,
+		})
 }
 
 func (rc *RabbitConsumerProducer) String() string {

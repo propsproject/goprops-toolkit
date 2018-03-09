@@ -15,9 +15,10 @@ var testConsumer *RabbitConsumerProducer
 var testProducer *RabbitConsumerProducer
 var testCases []testutils.TestCase
 var log = lgr.Logger
+var stopContainer *chan bool
 
 const (
-	url           = "amqp://dthifnky:aQCDD5Cim6ddAJ5CZr8u-iQKqpUDTlCY@porpoise.rmq.cloudamqp.com/dthifnky"
+	url           = "amqp://test:test@localhost:5672/"
 	exchange_name = "goUtilsTest"
 	routing_key   = "goUtilsTest.transfers"
 	exchange_type = "topic"
@@ -37,6 +38,9 @@ func setup(t *testing.T) func(t *testing.T) {
 	testConsumer = NewConsumer(url, exchange_name, routing_key, exchange_type, handle, log)
 	testProducer = NewConsumer(url, exchange_name, routing_key, exchange_type, handle, log)
 
+	t.Log("Starting Rabbitmq docker container")
+	stopContainer = testutils.StartRabbitmqContainerV1()
+
 	t.Log("Starting a test consumer")
 	if ok, err := testConsumer.Run(); !ok {
 		t.Errorf("Unexpected error: %v", err)
@@ -55,6 +59,7 @@ func setup(t *testing.T) func(t *testing.T) {
 func teardown(t *testing.T) {
 	t.Log("Running test teardown *consumer_producer_test.go*")
 	testConsumer.Close()
+	*stopContainer <- true
 }
 
 //Our test wrapper that gets invoke by the go runtime allowing us to range through our actual test cases and call t.Run for each test func

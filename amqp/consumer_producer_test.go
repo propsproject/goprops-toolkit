@@ -18,7 +18,7 @@ var log = lgr.Logger
 var stopContainer *chan bool
 
 const (
-	url           = "amqp://test:test@localhost:5672/"
+	url           = "amqp://user:user@127.0.0.1:5672/"
 	exchange_name = "goUtilsTest"
 	routing_key   = "goUtilsTest.transfers"
 	exchange_type = "topic"

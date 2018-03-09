@@ -9,6 +9,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/docker/docker/pkg/namesgenerator"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
@@ -18,7 +20,7 @@ import (
 
 const (
 	propsTokenRepo = "https://github.com/PROPSProject/props-token-distribution.git#docker"
-	rabbitmq       = "https://github.com/PROPSProject/go-utils.git#feature/dockerfiles:dockerfiles/rabbitmq"
+	rabbitmq       = "https://github.com/PROPSProject/dockerfiles.git#master:rabbitmq"
 	host           = "127.0.0.1"
 )
 
@@ -77,6 +79,7 @@ func StartPropsContainerV1(acct1, acct2, acct3 string) *chan bool {
 		ExposedPorts: portSet,
 		Entrypoint:   []string{"./run.sh", acct1, acct2, acct3},
 	}
+
 	createResp, err := cli.ContainerCreate(ctx, containerConfig, hostConfig, nil, tag)
 	if err != nil {
 		panic(err)
@@ -101,14 +104,23 @@ func StartRabbitmqContainerV1() *chan bool {
 		Remove:        true,
 		Tags:          []string{tag},
 		RemoteContext: rabbitmq,
+		NoCache:       true,
 	}
 
-	_, err = cli.ImageBuild(ctx, bytes.NewReader(make([]byte, 1000)), opts)
+	resp, err := cli.ImageBuild(ctx, bytes.NewReader(make([]byte, 1000)), opts)
 	if err != nil {
 		panic(err)
 	}
 
-	rabbitPort, _ := nat.NewPort("tcp", "5672")
+	defer resp.Body.Close()
+	log.Println("==================================================== From Docker ====================================================")
+	_, err = io.Copy(os.Stdout, resp.Body)
+	if err != nil {
+		panic(err)
+	}
+	log.Println("====================================================================================================================")
+
+	rabbitPort, _ := nat.NewPort("tcp", "15672")
 	ports := nat.PortMap{
 		rabbitPort: []nat.PortBinding{nat.PortBinding{
 			HostIP:   host,
@@ -123,7 +135,7 @@ func StartRabbitmqContainerV1() *chan bool {
 		Image:        tag,
 		ExposedPorts: portSet,
 	}
-	createResp, err := cli.ContainerCreate(ctx, containerConfig, hostConfig, nil, tag)
+	createResp, err := cli.ContainerCreate(ctx, containerConfig, hostConfig, nil, namesgenerator.GetRandomName(30))
 	if err != nil {
 		panic(err)
 	}
@@ -131,6 +143,7 @@ func StartRabbitmqContainerV1() *chan bool {
 	quit := make(chan bool)
 
 	go runContainer(&quit, cli, createResp.ID)
+
 	return &quit
 }
 

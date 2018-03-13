@@ -95,7 +95,8 @@ func (rc *RabbitConsumerProducer) Run() (bool, error) {
 	}
 
 	rc.Consume()
-	return rc.waitForCh(), nil
+	rc.ChannelReady.Store(true)
+	return true, nil
 }
 
 // RunProducer ...

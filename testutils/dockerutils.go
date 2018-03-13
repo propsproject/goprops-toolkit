@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/docker/docker/pkg/namesgenerator"
 
@@ -120,7 +121,7 @@ func StartRabbitmqContainerV1() *chan bool {
 	}
 	log.Println("====================================================================================================================")
 
-	rabbitPort, _ := nat.NewPort("tcp", "15672")
+	rabbitPort, _ := nat.NewPort("tcp", "5672")
 	ports := nat.PortMap{
 		rabbitPort: []nat.PortBinding{nat.PortBinding{
 			HostIP:   host,
@@ -135,7 +136,7 @@ func StartRabbitmqContainerV1() *chan bool {
 		Image:        tag,
 		ExposedPorts: portSet,
 	}
-	createResp, err := cli.ContainerCreate(ctx, containerConfig, hostConfig, nil, namesgenerator.GetRandomName(30))
+	createResp, err := cli.ContainerCreate(ctx, containerConfig, hostConfig, nil, namesgenerator.GetRandomName(-1))
 	if err != nil {
 		panic(err)
 	}
@@ -143,7 +144,16 @@ func StartRabbitmqContainerV1() *chan bool {
 	quit := make(chan bool)
 
 	go runContainer(&quit, cli, createResp.ID)
-
+	for {
+		c, err := cli.ContainerInspect(ctx, createResp.ID)
+		if err != nil {
+			panic(err)
+		}
+		if c.State.Running {
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
 	return &quit
 }
 

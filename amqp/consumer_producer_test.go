@@ -6,6 +6,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/cenkalti/backoff"
 	lgr "github.com/propsproject/go-utils/logger/v2"
 	"github.com/propsproject/go-utils/testutils"
 	"github.com/streadway/amqp"
@@ -35,20 +36,42 @@ be invoked inside the wrapper Test that ranges through our test cases and calls 
 */
 func setup(t *testing.T) func(t *testing.T) {
 	t.Log("Running test setup *consumer_producer_test.go*")
+
 	testConsumer = NewConsumer(url, exchange_name, routing_key, exchange_type, handle, log)
 	testProducer = NewConsumer(url, exchange_name, routing_key, exchange_type, handle, log)
 
+	backOff := backoff.WithMaxRetries(backoff.NewConstantBackOff(6), 530)
+	oProducer := func() error {
+		if ok, err := testProducer.RunProducer(); !ok {
+			return err
+		}
+
+		return nil
+	}
+
+	oConsumer := func() error {
+		if ok, err := testConsumer.Run(); !ok {
+			return err
+		}
+
+		return nil
+	}
 	t.Log("Starting Rabbitmq docker container")
 	stopContainer = testutils.StartRabbitmqContainerV1()
 
-	t.Log("Starting a test consumer")
-	if ok, err := testConsumer.Run(); !ok {
-		t.Errorf("Unexpected error: %v", err)
+	t.Logf("Trying to connect consumer with constant backoff %v seconds", 3)
+	err := backoff.Retry(oConsumer, backOff)
+	if err != nil {
+		t.Error(err)
 	}
 
-	t.Log("Starting a test producer")
-	if ok, err := testProducer.RunProducer(); !ok {
-		t.Errorf("Unexpected error: %v", err)
+	t.Logf("Trying to connect producer with constant backoff %v seconds", 3)
+	err = backoff.Retry(oProducer, backOff)
+	if err != nil {
+		t.Error(err)
+	}
+	if ok, err := testConsumer.Run(); !ok {
+		t.Error(err)
 	}
 
 	testCases = append(testCases, ProduceAndConsume)
@@ -59,7 +82,6 @@ func setup(t *testing.T) func(t *testing.T) {
 func teardown(t *testing.T) {
 	t.Log("Running test teardown *consumer_producer_test.go*")
 	testConsumer.Close()
-	*stopContainer <- true
 }
 
 //Our test wrapper that gets invoke by the go runtime allowing us to range through our actual test cases and call t.Run for each test func

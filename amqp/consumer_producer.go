@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
+	"strconv"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -23,8 +24,8 @@ const RecoverIntervalTime = 6 * 60
 
 // ConsumerProducer ...
 type ConsumerProducer interface {
-	Run()
-	RunProducer()
+	Run() (bool, error)
+	RunProducer() (bool, error)
 	String() string
 	Connect() error
 	ReConnect(int) error
@@ -47,10 +48,19 @@ type RabbitConsumerProducer struct {
 	ExchangeType    string // topic, direct, etc...
 	LastRecoverTime int64
 	CurrentStatus   atomic.Value
+	ChannelReady    atomic.Value
 	Handle          func(amqp.Delivery) bool
 	Messages        <-chan amqp.Delivery
-	Workers         uint64
-	Logger          *lgr.LoggerWrapper
+	PublishBuffer
+	Workers uint64
+	Logger  *lgr.LoggerWrapper
+}
+
+// PublishBuffer ...
+type PublishBuffer struct {
+	BufferChan chan []byte
+	Flush      chan bool
+	Buffer     []([]byte)
 }
 
 // Identity ...
@@ -64,13 +74,16 @@ func Identity() string {
 }
 
 // Run ...
-func (rc *RabbitConsumerProducer) Run() {
+func (rc *RabbitConsumerProducer) Run() (bool, error) {
+	rc.ChannelReady.Store(false)
+
 	if err := rc.Connect(); err != nil {
 		e := fmt.Errorf("RabbitMQ consumer connect error")
 		rc.Logger.Error(e,
 			lgr.Field{"error", err.Error()},
 			lgr.Field{"consumer-tag", rc.ConsumerTag},
 		)
+		return false, err
 	}
 	if err := rc.AnnounceQueue(); err != nil {
 		e := fmt.Errorf("RabbitMQ consumer announce error")
@@ -78,18 +91,33 @@ func (rc *RabbitConsumerProducer) Run() {
 			lgr.Field{"error", err.Error()},
 			lgr.Field{"consumer-tag", rc.ConsumerTag},
 		)
+		return false, err
 	}
+
 	rc.Consume()
+	return rc.waitForCh(), nil
 }
 
 // RunProducer ...
-func (rc *RabbitConsumerProducer) RunProducer() {
+func (rc *RabbitConsumerProducer) RunProducer() (bool, error) {
 	if err := rc.Connect(); err != nil {
 		e := fmt.Errorf("RabbitMQ Consumer run producer error")
 		rc.Logger.Error(e,
 			lgr.Field{"error", err.Error()},
 			lgr.Field{"consumer-tag", rc.ConsumerTag},
 		)
+		return false, err
+	}
+
+	return rc.waitForCh(), nil
+}
+
+func (rc *RabbitConsumerProducer) waitForCh() bool {
+	for {
+		if rc.Channel != nil {
+			rc.ChannelReady.Store(true)
+			return true
+		}
 	}
 }
 
@@ -119,20 +147,26 @@ func (rc *RabbitConsumerProducer) Connect() error {
 
 	go func() {
 		// Waits here for the channel to be closed
-		err := <-rc.Conn.NotifyClose(make(chan *amqp.Error))
-		rc.Logger.Warn("RabbitMQ connection closed",
-			lgr.Field{"error", err.Error()},
-			lgr.Field{"consumer-tag", rc.ConsumerTag},
-		)
-		// Let Handle know it's not time to reconnect
-		rc.Done <- errors.New("Channel Closed")
+		for {
+			select {
+			case err := <-rc.Conn.NotifyClose(make(chan *amqp.Error)):
+				if err != nil {
+					rc.Logger.Warn("RabbitMQ connection closed",
+						lgr.Field{"reason", fmt.Sprintf("%v", err.Reason)},
+						lgr.Field{"code", fmt.Sprintf("%v", strconv.Itoa(err.Code))},
+						lgr.Field{"consumer-tag", rc.ConsumerTag},
+					)
+					// Let Handle know it's not time to reconnect
+					rc.Done <- errors.New("Channel Closed")
+				}
+			}
+		}
 	}()
 
 	rc.Channel, err = rc.Conn.Channel()
 	if err != nil {
 		return fmt.Errorf("Channel: %s", err)
 	}
-
 	if err = rc.Channel.ExchangeDeclare(
 		rc.ExchangeName, // name of the exchange
 		rc.ExchangeType, // type
@@ -289,7 +323,6 @@ func NewConsumer(uri, exchangeName, routingKey, exchangeType string, handle func
 		Handle:          handle,
 		Logger:          logger,
 	}
-	consumer.CurrentStatus.Store(true)
 	return consumer
 }
 

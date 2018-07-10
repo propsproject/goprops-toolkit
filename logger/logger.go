@@ -14,8 +14,8 @@ const (
 	stderr    = "stderr"
 )
 
-// LoggerWrapper light convience wrapper around zap logger
-type LoggerWrapper struct {
+// Wrapper light convience wrapper around zap logger
+type Wrapper struct {
 	zapLogger *zap.Logger
 }
 
@@ -26,25 +26,21 @@ type Field struct {
 }
 
 // Logger ...
-var Logger *LoggerWrapper
+var Logger *Wrapper
 
 // Info ...
-func (l *LoggerWrapper) Info(msg string, data ...Field) {
+func (l *Wrapper) Info(msg string, data ...Field) {
 	l.zapLogger.Info(msg, Fields(data...)...)
 }
 
 // Warn ...
-func (l *LoggerWrapper) Warn(msg string, data ...Field) {
+func (l *Wrapper) Warn(msg string, data ...Field) {
 	l.zapLogger.Warn(msg, Fields(data...)...)
 }
 
 // Error ...
-func (l *LoggerWrapper) Error(err error, data ...Field) {
+func (l *Wrapper) Error(err error, data ...Field) {
 	l.zapLogger.Error(err.Error(), Fields(data...)...)
-}
-
-func (l *LoggerWrapper) Use(p Plugin) error {
-
 }
 
 // Fields creates fields map for log message
@@ -64,7 +60,7 @@ var lowPriority = zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
 	return lvl < zapcore.ErrorLevel
 })
 
-func NewLogger() *LoggerWrapper {
+func NewLogger(plugins ...Plugin) *Wrapper {
 	jsonDebugging := zapcore.AddSync(ioutil.Discard)
 	jsonErrors := zapcore.AddSync(ioutil.Discard)
 	consoleDebugging := zapcore.Lock(os.Stdout)
@@ -76,19 +72,26 @@ func NewLogger() *LoggerWrapper {
 	config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	consoleEncoder := zapcore.NewConsoleEncoder(config.EncoderConfig)
 
-	core := zapcore.NewTee(
-		zapcore.NewCore(jsonEncoder, jsonErrors, highPriority),
+	cors := []zapcore.Core{zapcore.NewCore(jsonEncoder, jsonErrors, highPriority),
 		zapcore.NewCore(consoleEncoder, consoleErrors, highPriority),
 		zapcore.NewCore(jsonEncoder, jsonDebugging, lowPriority),
-		zapcore.NewCore(consoleEncoder, consoleDebugging, lowPriority),
-	)
+		zapcore.NewCore(consoleEncoder, consoleDebugging, lowPriority)}
+
+	if len(plugins) > 0 {
+		for _, p := range plugins {
+			cor := zapcore.NewCore(jsonEncoder, zapcore.Lock(p.WriteSyncer()), highPriority)
+			cors = append(cors, cor)
+		}
+	}
+
+	core := zapcore.NewTee(cors...)
 
 	// var opts []zap.Option
 	// opts = append(opts,
 	// 	zap.Fields(zap.Int("pid", os.Getpid())),
 	// 	zap.Fields(zap.String("exe", path.Base(os.Args[0]))),
 	// )
-	return &LoggerWrapper{
+	return &Wrapper{
 		zapLogger: zap.New(core),
 	}
 }

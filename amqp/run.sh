@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 docker stop rabbit
 docker rm rabbit
 docker build -t rabbit https://github.com/PROPSProject/dockerfiles.git#master:rabbitmq

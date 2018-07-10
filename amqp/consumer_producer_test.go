@@ -7,15 +7,15 @@ import (
 	"testing"
 
 	"github.com/cenkalti/backoff"
-	lgr "github.com/propsproject/go-utils/logger/v2"
-	"github.com/propsproject/go-utils/testutils"
+	"github.com/propsproject/goprops-toolkit/testutils"
 	"github.com/streadway/amqp"
+	"github.com/propsproject/goprops-toolkit/logger"
 )
 
 var testConsumer *RabbitConsumerProducer
 var testProducer *RabbitConsumerProducer
 var testCases []testutils.TestCase
-var log = lgr.Logger
+var log = logger.NewLogger()
 var stopContainer *chan bool
 
 const (

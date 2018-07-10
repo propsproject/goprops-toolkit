@@ -1,13 +1,13 @@
 package main
 
 import (
-	"context"
 	"github.com/propsproject/goprops-toolkit/logger"
 	"github.com/propsproject/goprops-toolkit/propshttp"
 	"github.com/propsproject/goprops-toolkit/propshttp/routing"
 	"net/http"
+	"github.com/propsproject/goprops-toolkit/utils"
 	"os"
-	"syscall"
+	"github.com/julienschmidt/httprouter"
 )
 
 func main() {
@@ -19,7 +19,7 @@ func main() {
 			ResourcePath: "/helloworld",
 			Version:      "v1",
 			NameSpace:    "",
-			HandlerFunc: func(writer http.ResponseWriter, request *http.Request) {
+			HandlerFunc: func(writer http.ResponseWriter, request *http.Request, _ httprouter.Params) {
 				writer.Write([]byte("HELLO UNIVERSE"))
 			},
 		},
@@ -28,23 +28,11 @@ func main() {
 	config := map[string]string{"port": "3000"}
 	l := logger.NewLogger()
 	name := "Example"
-	ctx, cancel := context.WithCancel(context.Background())
 
-	router := propshttp.NewRouter(routes, config, l, name, ctx)
+	router := propshttp.NewRouter(routes, config, l, name)
 	go router.Start()
 
-	sig1 := make(chan os.Signal, 1)
-	sig2 := make(chan os.Signal, syscall.SIGINT)
-	for {
-		select {
-		case <-sig1:
-			l.Info("Stopping microservice signal 1")
-			cancel()
-			os.Exit(0)
-		case <-sig2:
-			l.Info("Stopping microservice signal 2")
-			cancel()
-			os.Exit(0)
-		}
-	}
+	utils.NewGracefulShutDownListener([]os.Signal{os.Kill, os.Interrupt}).Listen(router.ShutdownSig)
 }
+
+

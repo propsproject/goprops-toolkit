@@ -8,8 +8,8 @@ import (
 	"context"
 	"github.com/propsproject/goprops-toolkit/propshttp/routing"
 	"github.com/propsproject/goprops-toolkit/logger"
-	"github.com/julienschmidt/httprouter"
 	"time"
+	"gopkg.in/DataDog/dd-trace-go.v1/contrib/julienschmidt/httprouter"
 )
 
 func ContextWithLogger(l logger.Wrapper) context.Context {
@@ -32,7 +32,7 @@ type Router struct {
 func NewRouter(routes routing.Routes, config map[string]string, logger *logger.Wrapper, name string) *Router {
 	port, _ := strconv.Atoi(config["port"])
 	addr := fmt.Sprintf(":%s", config["port"])
-	mux := httprouter.New()
+	mux := httprouter.New(httprouter.WithServiceName(config["name"]))
 	router := &Router {
 		mux:         mux,
 		addr:        addr,

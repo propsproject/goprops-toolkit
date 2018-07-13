@@ -8,13 +8,10 @@ import (
 	"context"
 	"github.com/propsproject/goprops-toolkit/propshttp/routing"
 	"github.com/propsproject/goprops-toolkit/logger"
-	"time"
 	"gopkg.in/DataDog/dd-trace-go.v1/contrib/julienschmidt/httprouter"
+	"time"
+	"github.com/propsproject/goprops-toolkit/utils/sharedconf"
 )
-
-func ContextWithLogger(l logger.Wrapper) context.Context {
-	return context.WithValue(context.Background(), "logger", l)
-}
 
 //Router ...
 type Router struct {
@@ -24,7 +21,7 @@ type Router struct {
 	routes      routing.Routes
 	port        int
 	logger      *logger.Wrapper
-	ShutdownSig chan bool
+	shutdownSig chan bool
 	Name        string
 }
 
@@ -40,7 +37,7 @@ func NewRouter(routes routing.Routes, config map[string]string, logger *logger.W
 		routes:      append(routes, routing.DefaultRoutes...),
 		port:        port,
 		logger:      logger,
-		ShutdownSig: make(chan bool),
+		shutdownSig: make(chan bool),
 		Name:        name,
 	}
 
@@ -75,7 +72,7 @@ func (r *Router) logRoutes() {
 }
 
 //Start start http router
-func (r *Router) Start() {
+func (r *Router) Start(regCh chan sharedconf.ConsulRegistration) {
 	r.logger.Info("Starting HTTP server ", logger.Field{Key: "port", Value: strconv.Itoa(r.port)})
 	r.logRoutes()
 
@@ -87,14 +84,30 @@ func (r *Router) Start() {
 		}
 	}()
 
+	if regCh != nil {
+		regCh <- sharedconf.ConsulRegistration{Name: "http", Port: r.port}
+	}
+
+	r.WaitForShutdown()
+}
+
+func (r *Router) WaitForShutdown()  {
 	for {
 		select {
-		case <-r.ShutdownSig:
+		case <-r.shutdownSig:
 			r.logger.Warn(fmt.Sprintf("Attempting graceful shutdown of HTTP server: %s", r.Name))
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			r.server.Shutdown(ctx)
 			cancel()
-			r.ShutdownSig <- false
+			r.shutdownSig <- false
 		}
 	}
+}
+
+func (r *Router) ShutDownSig() chan bool {
+	return r.shutdownSig
+}
+
+func (r *Router) Port() string {
+	return string(r.port)
 }

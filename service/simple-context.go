@@ -1,22 +1,20 @@
-package utils
+package service
 
 import (
 	"os"
 	"os/signal"
-	"github.com/propsproject/goprops-toolkit/service"
 )
 
 type GracefulShutdown struct {
 	Signals []os.Signal
+	Stop chan os.Signal
 }
 
 func (gc *GracefulShutdown) Listen(doneChs []chan bool) {
-	stop := make(chan os.Signal)
-	signal.Notify(stop, gc.Signals...)
-
+	signal.Notify(gc.Stop, gc.Signals...)
 	for {
 		select {
-		case <-stop:
+		case <-gc.Stop:
 			for _, done := range doneChs {
 				done <- true
 				if <-done == false {
@@ -28,17 +26,17 @@ func (gc *GracefulShutdown) Listen(doneChs []chan bool) {
 	}
 }
 
-func (gc *GracefulShutdown) ListenForServices(services []service.Service) {
-	chs := make([]chan bool, len(services))
+func (gc *GracefulShutdown) ListenForServices(services []Service) {
+	chs := make([]chan bool, len(services)-1)
 	for _, service := range services {
 		chs = append(chs, service.ShutDownSig())
 	}
-
 	gc.Listen(chs)
 }
 
 func NewGracefulShutDownListener(signals []os.Signal) *GracefulShutdown {
 	return &GracefulShutdown{
 		Signals: signals,
+		Stop:  make(chan os.Signal),
 	}
 }

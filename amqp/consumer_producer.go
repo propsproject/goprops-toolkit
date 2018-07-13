@@ -7,16 +7,14 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
-	"os/signal"
 	"runtime"
 	"strconv"
 	"sync/atomic"
-	"syscall"
 	"time"
 
 	"github.com/propsproject/goprops-toolkit/logger"
 	"github.com/streadway/amqp"
-	"context"
+	"github.com/propsproject/goprops-toolkit/service"
 )
 
 // RecoverIntervalTime ...
@@ -24,8 +22,8 @@ const RecoverIntervalTime = 6 * 60
 
 // ConsumerProducer ...
 type ConsumerProducer interface {
-	Run(context.Context) (bool, error)
-	RunProducer(context.Context) (bool, error)
+	Run() (bool, error)
+	RunProducer() (bool, error)
 	String() string
 	Connect() error
 	ReConnect(int) error
@@ -52,8 +50,9 @@ type RabbitConsumerProducer struct {
 	Handle          func(amqp.Delivery) bool
 	Messages        <-chan amqp.Delivery
 	PublishBuffer
-	Workers uint64
-	Logger  *logger.Wrapper
+	Workers         uint64
+	Logger          *logger.Wrapper
+	shutdownSig     chan bool
 }
 
 // PublishBuffer ...
@@ -74,7 +73,7 @@ func Identity() string {
 }
 
 // Run ...
-func (rc *RabbitConsumerProducer) Run(ctx context.Context) (bool, error) {
+func (rc *RabbitConsumerProducer) Run() (bool, error) {
 	rc.ChannelReady.Store(false)
 
 	if err := rc.Connect(); err != nil {
@@ -97,19 +96,7 @@ func (rc *RabbitConsumerProducer) Run(ctx context.Context) (bool, error) {
 	rc.Consume()
 	rc.ChannelReady.Store(true)
 
-	go func(ctx context.Context, rc *RabbitConsumerProducer) {
-		for {
-			select {
-			case <-ctx.Done():
-				rc.Logger.Warn(fmt.Sprintf("Attempting graceful shutdown of AMQP conn: %s %s", rc.ConsumerTag, rc.ExchangeName))
-				rc.Conn.Close()
-				return
-			default:
-				continue
-			}
-		}
-	}(ctx, rc)
-
+	go rc.WaitForShutdown()
 	return true, nil
 }
 
@@ -134,6 +121,10 @@ func (rc *RabbitConsumerProducer) waitForCh() bool {
 			return true
 		}
 	}
+}
+
+func (rc *RabbitConsumerProducer) Start(regCh chan service.ConsulRegistration)  {
+	rc.Run()
 }
 
 // ReConnect ...
@@ -337,6 +328,7 @@ func NewConsumer(uri, exchangeName, routingKey, exchangeType string, handle func
 		LastRecoverTime: time.Now().Unix(),
 		Handle:          handle,
 		Logger:          logger,
+		shutdownSig:     make(chan bool),
 	}
 	return consumer
 }
@@ -368,16 +360,17 @@ func (rc *RabbitConsumerProducer) failOnError(errs ...interface{}) {
 	rc.Logger.Error(errors.New(b.String()))
 }
 
-func (rc *RabbitConsumerProducer) handleSigTerm() {
-	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt)
-	signal.Notify(interrupt, syscall.SIGTERM)
+func (rc *RabbitConsumerProducer) WaitForShutdown()  {
 	for {
 		select {
-		case <-interrupt:
+		case <-rc.shutdownSig:
 			rc.Logger.Info(fmt.Sprintf("Received interrupt signal, closing. Consumer Name: %v, Routing Key: %v, ExchangeName %v ", rc.ConsumerTag, rc.RoutingKey, rc.ExchangeName))
 			rc.Close()
-			os.Exit(0)
+			rc.shutdownSig <- false
 		}
 	}
+}
+
+func (rc *RabbitConsumerProducer) ShutDownSig() chan bool {
+	return rc.shutdownSig
 }

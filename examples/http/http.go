@@ -5,13 +5,22 @@ import (
 	"github.com/propsproject/goprops-toolkit/propshttp"
 	"github.com/propsproject/goprops-toolkit/propshttp/routing"
 	"net/http"
-	"github.com/propsproject/goprops-toolkit/utils"
-	"os"
 	"github.com/julienschmidt/httprouter"
+	"github.com/propsproject/goprops-toolkit/service"
 )
 
 func main() {
 
+	var httpService service.Service
+	httpService = getRouter()
+
+	microservice, _ := service.NewMicroService("")
+	microservice.AddServices(httpService)
+
+	microservice.Run()
+}
+
+func getRouter() *propshttp.Router {
 	routes := routing.Routes{
 		routing.Route{
 			Name:         "HelloUniverse",
@@ -25,14 +34,10 @@ func main() {
 		},
 	}
 
-	config := map[string]string{"port": "3000"}
+	config := map[string]string{"port": "4000"}
 	l := logger.NewLogger()
 	name := "Example"
 
-	router := propshttp.NewRouter(routes, config, l, name)
-	go router.Start()
+	return propshttp.NewRouter(routes, config, l, name)
 
-	utils.NewGracefulShutDownListener([]os.Signal{os.Kill, os.Interrupt}).Listen(router.ShutdownSig)
 }
-
-

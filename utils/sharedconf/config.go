@@ -18,6 +18,7 @@ const (
 type Config struct {
 	consulI
 	loggerI
+	viperI *viper.Viper
 	IsProduction bool `env:"PRODUCTION"`
 }
 
@@ -52,9 +53,11 @@ func (c *Config) LoadConfig(microService string) error {
 		return err
 	}
 
-	viper.AddRemoteProvider(viperProvider, c.consulI.Address, fmt.Sprintf("services/%s", microService))
-	viper.SetConfigType(configType)
-	err = viper.ReadRemoteConfig()
+	c.viperI = viper.New()
+
+	c.viperI.AddRemoteProvider(viperProvider, c.consulI.Address, fmt.Sprintf("services/%s", microService))
+	c.viperI.SetConfigType(configType)
+	err = c.viperI.ReadRemoteConfig()
 	if err != nil {
 		return err
 	}

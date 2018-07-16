@@ -14,7 +14,7 @@ func main() {
 	var httpService service.Service
 	httpService = getRouter()
 
-	microservice, _ := service.NewMicroService("")
+	microservice := service.NewMicroService()
 	microservice.AddServices(httpService)
 
 	microservice.Run()
@@ -34,7 +34,7 @@ func getRouter() *propshttp.Router {
 		},
 	}
 
-	config := map[string]string{"port": "4000"}
+	config := map[string]string{"port": "3000"}
 	l := logger.NewLogger()
 	name := "Example"
 

@@ -43,6 +43,16 @@ func (l *Wrapper) Error(err error, data ...Field) {
 	l.zapLogger.Error(err.Error(), Fields(data...)...)
 }
 
+// Fatal ...
+func (l *Wrapper) Fatal(err error, data ...Field) {
+	l.zapLogger.Error(err.Error(), Fields(data...)...)
+	os.Exit(1)
+}
+
+func (l *Wrapper) Plain(msg string) {
+	println(msg)
+}
+
 // Fields creates fields map for log message
 func Fields(f ...Field) []zapcore.Field {
 	var fields []zapcore.Field
@@ -85,13 +95,8 @@ func NewLogger(plugins ...Plugin) *Wrapper {
 	}
 
 	core := zapcore.NewTee(cors...)
-
-	// var opts []zap.Option
-	// opts = append(opts,
-	// 	zap.Fields(zap.Int("pid", os.Getpid())),
-	// 	zap.Fields(zap.String("exe", path.Base(os.Args[0]))),
-	// )
+	pid := zap.Fields(zap.Int("pid", os.Getpid()))
 	return &Wrapper{
-		zapLogger: zap.New(core),
+		zapLogger: zap.New(core).WithOptions(pid, zap.AddCaller(), zap.AddCallerSkip(1)),
 	}
 }

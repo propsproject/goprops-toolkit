@@ -6,6 +6,7 @@ import (
 	"os"
 	"github.com/spf13/viper"
 	"github.com/propsproject/goprops-toolkit/logger"
+	"sync"
 )
 
 type MicroService struct {
@@ -16,8 +17,10 @@ type MicroService struct {
 	ShutdownListener *GracefulShutdown
 	services []Service
 	Config map[string]interface{}
+	ConfigPath string
 	consulRegCh chan sharedconf.ConsulRegistration
 	IsDevelopment bool
+	once sync.Once
 }
 
 var defaultSignals = []os.Signal{os.Kill, os.Interrupt}
@@ -34,6 +37,7 @@ func (m *MicroService) Run() {
 	for _, service := range m.services {
 		go service.Start(m.consulRegCh)
 	}
+
 	go m.registerServices()
 	m.ShutdownListener.ListenForServices(m.services)
 }
@@ -50,36 +54,11 @@ func (m *MicroService) registerServices() {
 	close(m.consulRegCh)
 }
 
-func (m *MicroService) initConfigs(configPath string) error {
-	viper.SetConfigType("yaml")
-	viper.AddConfigPath(configPath)
-	err := viper.ReadInConfig()
-	if err != nil {
-		return fmt.Errorf("Fatal error config file: %s \n", err)
-	}
-
-	err = viper.ReadInConfig()
-	if err != nil {
-		return fmt.Errorf("Fatal error config file: %s \n", err)
-	}
-
-	err = viper.Unmarshal(m.Config)
-	if err != nil {
-		return fmt.Errorf("Fatal error config file: %s \n", err)
-	}
-
-	m.Name = m.Config["name"].(string)
-	m.Description = m.Config["description"].(string)
-	m.Version = m.Config["version"].(string)
-
-	err = m.common.LoadConfig(m.Name)
-	if err != nil {
-		return fmt.Errorf("Fatal error loading common configs: %s \n", err)
-	}
-
-	return nil
+func (m *MicroService) LoadConfigs() {
+	m.once.Do(func() {
+		m.common.LoadConfig(m.Name)
+	})
 }
-
 
 func (m *MicroService) Logger() *logger.Wrapper  {
 	return m.common.Logger()
@@ -89,20 +68,11 @@ func (m *MicroService) Consul() *sharedconf.ConsulClient  {
 	return m.common.Consul()
 }
 
-func NewMicroService(configPath string) (*MicroService, error) {
-	microService := &MicroService{
+func NewMicroService() *MicroService {
+	return &MicroService{
 		ShutdownListener: NewGracefulShutDownListener(defaultSignals),
 		consulRegCh: make(chan sharedconf.ConsulRegistration),
 	}
-
-	var err error
-	if configPath !=  "" {
-		err = microService.initConfigs(configPath)
-	} else {
-		microService.IsDevelopment = true
-	}
-
-	return microService, err
 }
 
 

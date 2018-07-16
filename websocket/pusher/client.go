@@ -3,7 +3,7 @@ package pusher
 import (
 	"encoding/json"
 
-	pusher "github.com/pusher/pusher-http-go"
+	"github.com/pusher/pusher-http-go"
 )
 
 // RegistryClient ...

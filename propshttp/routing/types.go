@@ -3,7 +3,7 @@ package routing
 import (
 	"bytes"
 	"fmt"
-	"net/http"
+	"github.com/julienschmidt/httprouter"
 )
 
 //Route route struct
@@ -13,7 +13,7 @@ type Route struct {
 	ResourcePath string
 	Version      string
 	NameSpace    string
-	HandlerFunc  http.HandlerFunc
+	HandlerFunc  httprouter.Handle
 }
 
 func (r *Route) String() string {

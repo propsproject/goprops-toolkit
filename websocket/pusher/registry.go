@@ -4,6 +4,8 @@ import (
 	"sync"
 
 	"github.com/pusher/pusher-http-go"
+	"fmt"
+	"github.com/propsproject/goprops-toolkit/logger"
 )
 
 var registry *SocketRegistry
@@ -13,6 +15,8 @@ type SocketRegistry struct {
 	PusherConn pusher.Client
 	Clients    *sync.Map
 	Events     *sync.Map
+	shutdownSig chan bool
+	Logger *logger.Wrapper
 }
 
 // Payload ...
@@ -85,8 +89,22 @@ func (r *SocketRegistry) Run() {
 	})
 }
 
+func (r *SocketRegistry) WaitForShutdown()  {
+	for {
+		select {
+		case <-r.shutdownSig:
+			r.Logger.Info(fmt.Sprintf("Received interrupt signal"))
+			r.shutdownSig <- false
+		}
+	}
+}
+
+func (r *SocketRegistry) ShutDownSig() chan bool {
+	return r.shutdownSig
+}
+
 // NewPusherRegistry creates a new pusher registry
-func NewPusherRegistry(appID, key, secret, cluster string, events map[string]Event) *SocketRegistry {
+func NewPusherRegistry(appID, key, secret, cluster string, events map[string]Event, logger *logger.Wrapper) *SocketRegistry {
 	pusherClient := pusher.Client{
 		AppId:   appID,
 		Key:     key,
@@ -98,6 +116,8 @@ func NewPusherRegistry(appID, key, secret, cluster string, events map[string]Eve
 		PusherConn: pusherClient,
 		Clients:    new(sync.Map),
 		Events:     new(sync.Map),
+		shutdownSig: make(chan bool),
+		Logger: logger,
 	}
 
 	registry.RegisterEvents(events)

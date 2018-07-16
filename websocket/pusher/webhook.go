@@ -5,24 +5,23 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	lgr "github.com/propsproject/go-utils/logger/v2"
-	pusher "github.com/pusher/pusher-http-go"
+	"github.com/propsproject/goprops-toolkit/logger"
+	"github.com/pusher/pusher-http-go"
+	"context"
 )
 
-var logger = lgr.Logger
-
 // HandlePrecenseWebHook function to handle member_added & member_removed pusher webhook
-func (r *SocketRegistry) HandlePrecenseWebHook(req *http.Request) error {
+func (r *SocketRegistry) HandlePrecenseWebHook(ctx context.Context, req *http.Request) error {
 	var payload pusher.Webhook
 	b, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		logger.Error(err)
+		ctx.Value("logger").(logger.Wrapper).Error(err)
 		return err
 	}
 
 	err = json.Unmarshal(b, &payload)
 	if err != nil {
-		logger.Error(err)
+		ctx.Value("logger").(logger.Wrapper).Error(err)
 		return err
 	}
 

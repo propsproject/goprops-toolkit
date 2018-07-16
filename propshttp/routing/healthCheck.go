@@ -26,5 +26,5 @@ var healthCheck = Route {
 	ResourcePath: "/health",
 	Version:      "v1",
 	NameSpace:    "/check",
-	HandlerFunc:  healthCheckHandler,
+	Handle:  healthCheckHandler,
 }

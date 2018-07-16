@@ -42,7 +42,6 @@ func NewRouter(routes routing.Routes, config map[string]string, logger *logger.W
 	}
 
 	//TODO: setup proper CORS configuration
-	router.mux.HandleOPTIONS = true
 	router.registerRoutes()
 	return router
 }
@@ -51,15 +50,15 @@ func (r *Router) registerRoutes() {
 	for _, route := range r.routes {
 		switch route.Method {
 		case "GET":
-			r.mux.GET(route.GetURI(), route.HandlerFunc)
+			r.mux.GET(route.GetURI(), route.Handle)
 		case "POST":
-			r.mux.POST(route.GetURI(), route.HandlerFunc)
+			r.mux.POST(route.GetURI(), route.Handle)
 		case "PUT":
-			r.mux.PUT(route.GetURI(), route.HandlerFunc)
+			r.mux.PUT(route.GetURI(), route.Handle)
 		case "DELETE":
-			r.mux.DELETE(route.GetURI(), route.HandlerFunc)
+			r.mux.DELETE(route.GetURI(), route.Handle)
 		case "OPTIONS":
-			r.mux.OPTIONS(route.GetURI(), route.HandlerFunc)
+			r.mux.OPTIONS(route.GetURI(), route.Handle)
 		default:
 			err := fmt.Errorf("unsupported method type (%v) on route (%v), supported methods are GET POST PUT DELETE UPDATE", route.Method, route.Name)
 			panic(err)

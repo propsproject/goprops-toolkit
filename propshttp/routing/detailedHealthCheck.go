@@ -35,5 +35,5 @@ var detailedHealthCheck = Route {
 	Version:      "v1",
 	ResourcePath: "/detailed-health",
 	Method:       "GET",
-	HandlerFunc:  detailedHealthCheckHandler,
+	Handle:  detailedHealthCheckHandler,
 }

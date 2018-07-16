@@ -29,18 +29,16 @@ func newConsulClient(endpoint string) *ConsulClient {
 
 // Register a service with consul local agent
 func (c *ConsulClient) Register(name string, port int) (string, error) {
-	id, err := uuid.NewV4()
-	if err != nil {
-		return "", err
-	}
-	c.services = append(c.services, id.String())
+	id := uuid.NewV4().String()
+
+	c.services = append(c.services, id)
 	reg := &consul.AgentServiceRegistration{
-		ID:   id.String(),
+		ID:   id,
 		Name: name,
 		Port: port,
 	}
-	err = c.consul.Agent().ServiceRegister(reg)
-	return id.String(), err
+	err := c.consul.Agent().ServiceRegister(reg)
+	return id, err
 }
 
 func (c *ConsulClient) Clean() {

@@ -13,7 +13,7 @@ type Route struct {
 	ResourcePath string
 	Version      string
 	NameSpace    string
-	HandlerFunc  httprouter.Handle
+	httprouter.Handle
 }
 
 func (r *Route) String() string {

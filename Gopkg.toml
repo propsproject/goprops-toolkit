@@ -24,15 +24,6 @@
 #   go-tests = true
 #   unused-packages = true
 
-ignored = ["github.com/ethereum/go-ethereum/*"]
-
-[[constraint]]
-  name = "github.com/gorilla/websocket"
-  version = "1.2.0"
-
-[[constraint]]
-  branch = "master"
-  name = "github.com/matryer/resync"
 
 [[constraint]]
   name = "go.uber.org/zap"

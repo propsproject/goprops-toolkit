@@ -3,20 +3,9 @@ package routing
 import (
 	"bytes"
 	"fmt"
-	"net/http"
 	"github.com/julienschmidt/httprouter"
+	"net/http"
 )
-
-type Handler struct{}
-
-func(h *Handler) Handle(handle func(w http.ResponseWriter, r *http.Request, p httprouter.Params)) httprouter.Handle {
-	return handle
-}
-
-func NewHandler(h func(http.ResponseWriter, *http.Request, httprouter.Params)) httprouter.Handle {
-	var handler Handler
-	return handler.Handle(h)
-}
 
 //Route route struct
 type Route struct {
@@ -25,7 +14,23 @@ type Route struct {
 	ResourcePath string
 	Version      string
 	NameSpace    string
-	Handler httprouter.Handle
+	Handler      httprouter.Handle
+}
+
+func (r *Route) Use(mw httprouter.Handle) *Route {
+	r.Handler = r.use(mw)
+	return r
+}
+
+func (r *Route) use(mw httprouter.Handle) httprouter.Handle {
+	last := r.Handler
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+			mw(w, r, ps)
+		}(w, r, p)
+
+		last(w, r, p)
+	}
 }
 
 func (r *Route) String() string {
@@ -39,19 +44,19 @@ func (r *Route) GetURI() string {
 	return fmt.Sprintf("%v/%v%v", r.NameSpace, r.Version, r.ResourcePath)
 }
 
-func NewRoute(conf map[string]string, handler httprouter.Handle) Route {
-	return Route{
-		Name: conf["name"],
-		Method: conf["method"],
+func NewRoute(conf map[string]string, handler httprouter.Handle) *Route {
+	return &Route{
+		Name:         conf["name"],
+		Method:       conf["method"],
 		ResourcePath: conf["resourcePath"],
-		Version: conf["version"],
-		NameSpace: conf["namespace"],
-		Handler: handler,
+		Version:      conf["version"],
+		NameSpace:    conf["namespace"],
+		Handler:      handler,
 	}
 }
 
 // Routes ...
-type Routes []Route
+type Routes []*Route
 
 func (r *Routes) String() string {
 	var buffer bytes.Buffer

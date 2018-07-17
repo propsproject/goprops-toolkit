@@ -11,6 +11,8 @@ import (
 	"gopkg.in/DataDog/dd-trace-go.v1/contrib/julienschmidt/httprouter"
 	"time"
 	"github.com/propsproject/goprops-toolkit/utils/sharedconf"
+	"github.com/propsproject/goprops-toolkit/propshttp/routing/v1/check"
+	"github.com/propsproject/goprops-toolkit/service"
 )
 
 //Router ...
@@ -34,7 +36,7 @@ func NewRouter(routes routing.Routes, config map[string]string, logger *logger.W
 		mux:         mux,
 		addr:        addr,
 		server:      &http.Server{Addr: addr, Handler: mux},
-		routes:      append(routes, routing.DefaultRoutes...),
+		routes:      append(routes, check.DefaultRoutes...),
 		port:        port,
 		logger:      logger,
 		shutdownSig: make(chan bool),
@@ -46,19 +48,23 @@ func NewRouter(routes routing.Routes, config map[string]string, logger *logger.W
 	return router
 }
 
+func (r *Router) AsService() service.Service {
+	return r
+}
+
 func (r *Router) registerRoutes() {
 	for _, route := range r.routes {
 		switch route.Method {
 		case "GET":
-			r.mux.GET(route.GetURI(), route.Handle)
+			r.mux.Handle("GET", route.GetURI(), route.Handler)
 		case "POST":
-			r.mux.POST(route.GetURI(), route.Handle)
+			r.mux.POST(route.GetURI(), route.Handler)
 		case "PUT":
-			r.mux.PUT(route.GetURI(), route.Handle)
+			r.mux.PUT(route.GetURI(), route.Handler)
 		case "DELETE":
-			r.mux.DELETE(route.GetURI(), route.Handle)
+			r.mux.DELETE(route.GetURI(), route.Handler)
 		case "OPTIONS":
-			r.mux.OPTIONS(route.GetURI(), route.Handle)
+			r.mux.OPTIONS(route.GetURI(), route.Handler)
 		default:
 			err := fmt.Errorf("unsupported method type (%v) on route (%v), supported methods are GET POST PUT DELETE UPDATE", route.Method, route.Name)
 			panic(err)
@@ -72,7 +78,7 @@ func (r *Router) logRoutes() {
 
 //Start start http router
 func (r *Router) Start(regCh chan sharedconf.ConsulRegistration) {
-	r.logger.Info("Starting HTTP server ", logger.Field{Key: "port", Value: strconv.Itoa(r.port)})
+	r.logger.Info(fmt.Sprintf("Starting HTTP Router %s", r.Name), logger.Field{Key: "port", Value: strconv.Itoa(r.port)})
 	r.logRoutes()
 
 	go func() {

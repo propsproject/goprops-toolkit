@@ -29,8 +29,9 @@ func (m *MicroService) String() string {
 	return fmt.Sprintf("%s version: %s", m.Name, m.Version)
 }
 
-func (m *MicroService) AddServices(services ...Service)  {
+func (m *MicroService) AddServices(services ...Service) *MicroService {
 	m.services = append(m.services, services...)
+	return m
 }
 
 func (m *MicroService) Run() {

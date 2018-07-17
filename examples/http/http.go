@@ -1,43 +1,37 @@
 package main
 
 import (
-	"github.com/propsproject/goprops-toolkit/logger"
+	propslogger "github.com/propsproject/goprops-toolkit/logger"
 	"github.com/propsproject/goprops-toolkit/propshttp"
 	"github.com/propsproject/goprops-toolkit/propshttp/routing"
+	"github.com/propsproject/goprops-toolkit/service"
 	"net/http"
 	"github.com/julienschmidt/httprouter"
-	"github.com/propsproject/goprops-toolkit/service"
 )
 
 func main() {
-
-	var httpService service.Service
-	httpService = getRouter()
-
-	microservice := service.NewMicroService()
-	microservice.AddServices(httpService)
-
-	microservice.Run()
-}
-
-func getRouter() *propshttp.Router {
-	routes := routing.Routes{
-		routing.Route{
-			Name:         "HelloUniverse",
-			Method:       "GET",
-			ResourcePath: "/helloworld",
-			Version:      "v1",
-			NameSpace:    "",
-			HandlerFunc: func(writer http.ResponseWriter, request *http.Request, _ httprouter.Params) {
-				writer.Write([]byte("HELLO UNIVERSE"))
-			},
-		},
+	routeConf := map[string]string{
+		"name":"Hello World",
+		"resourcePath":"/helloworld",
+		"method":"GET",
+		"version":"v1",
+		"namespace":"/check",
 	}
 
-	config := map[string]string{"port": "3000"}
-	l := logger.NewLogger()
+	handler := func(writer http.ResponseWriter, request *http.Request, _ httprouter.Params) {
+		writer.Write([]byte("HELLO UNIVERSE"))
+	}
+
+	route := routing.NewRoute(routeConf, handler)
+	routes := []routing.Route{route}
+
+	routerServiceConf := map[string]string{"port": "3000"}
+	logger := propslogger.NewLogger()
 	name := "Example"
 
-	return propshttp.NewRouter(routes, config, l, name)
 
+	helloWorld := propshttp.NewRouter(routes, routerServiceConf, logger, name).AsService()
+
+	microservice := service.NewMicroService().AddServices(helloWorld)
+	microservice.Run()
 }

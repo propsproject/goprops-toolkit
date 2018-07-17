@@ -19,7 +19,7 @@ func main() {
 	}
 
 	handler := func(writer http.ResponseWriter, request *http.Request, _ httprouter.Params) {
-		writer.Write([]byte("HELLO UNIVERSE"))
+		writer.Write([]byte("HELLO WORLD FROM PROPS ENGINEERING"))
 	}
 
 	route := routing.NewRoute(routeConf, handler)

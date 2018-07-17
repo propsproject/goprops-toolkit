@@ -4,7 +4,6 @@ import (
 	"github.com/propsproject/goprops-toolkit/utils/sharedconf"
 	"fmt"
 	"os"
-	"github.com/spf13/viper"
 	"github.com/propsproject/goprops-toolkit/logger"
 	"sync"
 )
@@ -45,7 +44,7 @@ func (m *MicroService) Run() {
 
 func (m *MicroService) registerServices() {
 	for reg := range m.consulRegCh {
-		name := fmt.Sprintf("%s.%s", viper.GetString("name"), reg.Name)
+		name := fmt.Sprintf("%s.%s", m.Name, reg.Name)
 		if m.IsDevelopment {
 			m.Logger().Warn(fmt.Sprintf("(%s) service running in development mode. No Consul configuration was loaded. ", name))
 		} else {
@@ -57,7 +56,10 @@ func (m *MicroService) registerServices() {
 
 func (m *MicroService) LoadConfigs() {
 	m.once.Do(func() {
-		m.common.LoadConfig(m.Name)
+		err := m.common.LoadConfig(m.Name)
+		if err != nil {
+			m.Logger().Fatal(err)
+		}
 	})
 }
 
@@ -69,10 +71,13 @@ func (m *MicroService) Consul() *sharedconf.ConsulClient  {
 	return m.common.Consul()
 }
 
-func NewMicroService() *MicroService {
+func NewMicroService(name, description, version string) *MicroService {
 	return &MicroService{
 		ShutdownListener: NewGracefulShutDownListener(defaultSignals),
 		consulRegCh: make(chan sharedconf.ConsulRegistration),
+		Name: name,
+		Description: description,
+		Version: version,
 	}
 }
 

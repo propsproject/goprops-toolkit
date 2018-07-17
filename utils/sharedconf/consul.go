@@ -17,28 +17,31 @@ type ConsulRegistration struct {
 	Port int
 }
 
-func newConsulClient(endpoint string) *ConsulClient {
+func newConsulClient(endpoint string) (*ConsulClient, error) {
 	config := consul.DefaultConfig()
 	config.Address = endpoint
-	c, _ := consul.NewClient(config)
+	c, err:= consul.NewClient(config)
+	if err != nil {
+		return nil, err
+	}
 	return &ConsulClient{
 		consul: c,
 		services: make([]string, 0),
-	}
+	}, nil
 }
 
 // Register a service with consul local agent
 func (c *ConsulClient) Register(name string, port int) (string, error) {
-	id := uuid.NewV4().String()
+	id, _ := uuid.NewV4()
 
-	c.services = append(c.services, id)
+	c.services = append(c.services, id.String())
 	reg := &consul.AgentServiceRegistration{
-		ID:   id,
+		ID:   id.String(),
 		Name: name,
 		Port: port,
 	}
 	err := c.consul.Agent().ServiceRegister(reg)
-	return id, err
+	return id.String(), err
 }
 
 func (c *ConsulClient) Clean() {

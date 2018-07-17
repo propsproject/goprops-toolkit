@@ -13,18 +13,19 @@ import (
 const (
 	configType    = "json"
 	viperProvider = "consul"
+
+	microservicesKey = "microservices"
 )
 
 type Config struct {
 	consulI
 	loggerI
-	viperI *viper.Viper
-	IsProduction bool `env:"PRODUCTION"`
+	IsProduction bool `env:"false"`
 }
 
 type consulI struct {
 	instance *ConsulClient
-	Address  string `env:"CONSUL_URI" envDefault:"127.0.0.1:9500"`
+	Address  string `env:"CONSUL_URI" envDefault:"127.0.0.1:8500"`
 	once     sync.Once
 }
 
@@ -42,22 +43,28 @@ func (c *Config) logger() *propsLogger.Wrapper {
 
 func (c *Config) consulClient() *ConsulClient {
 	c.consulI.once.Do(func() {
-		c.consulI.instance = newConsulClient(c.consulI.Address)
+		client, err := newConsulClient(c.consulI.Address)
+		if err != nil {
+			c.Logger().Fatal(err)
+		}
+		c.consulI.instance = client
 	})
 	return c.consulI.instance
 }
 
 func (c *Config) LoadConfig(microService string) error {
-	err := env.Parse(&c)
+	err := env.Parse(&c.consulI)
 	if err != nil {
 		return err
 	}
 
-	c.viperI = viper.New()
+	err = viper.AddRemoteProvider(viperProvider, c.consulI.Address, fmt.Sprintf("%s/%s", microservicesKey, microService))
+	if err != nil {
+		return err
+	}
 
-	c.viperI.AddRemoteProvider(viperProvider, c.consulI.Address, fmt.Sprintf("services/%s", microService))
-	c.viperI.SetConfigType(configType)
-	err = c.viperI.ReadRemoteConfig()
+	viper.SetConfigType(configType)
+	err = viper.ReadRemoteConfig()
 	if err != nil {
 		return err
 	}

@@ -17,19 +17,17 @@ type Route struct {
 	Handler      httprouter.Handle
 }
 
-func (r *Route) Use(mw httprouter.Handle) *Route {
+type RouteMiddleWare func(w http.ResponseWriter, r *http.Request, p httprouter.Params, next httprouter.Handle)
+
+func (r *Route) Use(mw RouteMiddleWare) *Route {
 	r.Handler = r.use(mw)
 	return r
 }
 
-func (r *Route) use(mw httprouter.Handle) httprouter.Handle {
-	last := r.Handler
+func (r *Route) use(mw RouteMiddleWare) httprouter.Handle {
+	next := r.Handler
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-			mw(w, r, ps)
-		}(w, r, p)
-
-		last(w, r, p)
+		mw(w, r, p, next)
 	}
 }
 

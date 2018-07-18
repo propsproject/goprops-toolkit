@@ -3,40 +3,47 @@ package service
 import (
 	"os"
 	"os/signal"
+	"sync"
 )
 
 type GracefulShutdown struct {
 	Signals []os.Signal
-	Stop chan os.Signal
 }
 
-func (gc *GracefulShutdown) Listen(doneChs []chan bool) {
-	signal.Notify(gc.Stop, gc.Signals...)
+func (gc *GracefulShutdown) NotifyShutdown(done chan bool, wg *sync.WaitGroup) {
+	done <- true
 	for {
 		select {
-		case <-gc.Stop:
-			for _, done := range doneChs {
-				done <- true
-				if <-done == false {
-					continue
-				}
-			}
-			os.Exit(0)
+		case <- done:
+			wg.Done()
+			return
 		}
 	}
 }
 
 func (gc *GracefulShutdown) ListenForServices(services []Service) {
-	chs := make([]chan bool, len(services)-1)
-	for _, service := range services {
-		chs = append(chs, service.ShutDownSig())
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+
+
+	for {
+		select {
+		case <- c:
+			var wg sync.WaitGroup
+			go func() {
+				for _, service := range services {
+					wg.Add(1)
+					service.ShutDownSig() <- &wg
+				}
+			}()
+			wg.Wait()
+			return
+		}
 	}
-	gc.Listen(chs)
 }
 
 func NewGracefulShutDownListener(signals []os.Signal) *GracefulShutdown {
 	return &GracefulShutdown{
 		Signals: signals,
-		Stop:  make(chan os.Signal),
 	}
 }

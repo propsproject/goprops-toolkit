@@ -5,14 +5,14 @@ import (
 	"net/http"
 	"strconv"
 
-	"context"
 	"github.com/propsproject/goprops-toolkit/propshttp/routing"
 	"github.com/propsproject/goprops-toolkit/logger"
 	"gopkg.in/DataDog/dd-trace-go.v1/contrib/julienschmidt/httprouter"
-	"time"
 	"github.com/propsproject/goprops-toolkit/utils/sharedconf"
 	"github.com/propsproject/goprops-toolkit/propshttp/routing/v1/check"
 	"github.com/propsproject/goprops-toolkit/service"
+	"sync"
+	"context"
 )
 
 //Router ...
@@ -23,7 +23,7 @@ type Router struct {
 	routes      routing.Routes
 	port        int
 	logger      *logger.Wrapper
-	shutdownSig chan bool
+	shutdownSig chan *sync.WaitGroup
 	Name        string
 }
 
@@ -39,7 +39,7 @@ func NewRouter(routes routing.Routes, config map[string]string, logger *logger.W
 		routes:      append(routes, check.DefaultRoutes...),
 		port:        port,
 		logger:      logger,
-		shutdownSig: make(chan bool),
+		shutdownSig: make(chan *sync.WaitGroup),
 		Name:        name,
 	}
 
@@ -92,24 +92,24 @@ func (r *Router) Start(regCh chan sharedconf.ConsulRegistration) {
 	if regCh != nil {
 		regCh <- sharedconf.ConsulRegistration{Name: "http", Port: r.port}
 	}
-
 	r.WaitForShutdown()
 }
 
 func (r *Router) WaitForShutdown()  {
 	for {
-		select {
-		case <-r.shutdownSig:
+		if wg := <- r.shutdownSig; wg != nil {
 			r.logger.Warn(fmt.Sprintf("Attempting graceful shutdown of HTTP server: %s", r.Name))
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-			r.server.Shutdown(ctx)
-			cancel()
-			r.shutdownSig <- false
+			err := r.server.Shutdown(context.Background())
+			if err != nil {
+				r.logger.Warn(fmt.Sprintf("Could not gracefully shutdown HTTP server: %s", r.Name))
+			}
+			wg.Done()
+			break
 		}
 	}
 }
 
-func (r *Router) ShutDownSig() chan bool {
+func (r *Router) ShutDownSig() chan *sync.WaitGroup {
 	return r.shutdownSig
 }
 

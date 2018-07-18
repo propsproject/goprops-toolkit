@@ -31,17 +31,24 @@ func newConsulClient(endpoint string) (*ConsulClient, error) {
 }
 
 // Register a service with consul local agent
-func (c *ConsulClient) Register(name string, port int) (string, error) {
+func (c *ConsulClient) Register(microserviceName string, reg ConsulRegistration, isDevelopment bool) (string, error) {
 	id, _ := uuid.NewV4()
 
-	c.services = append(c.services, id.String())
-	reg := &consul.AgentServiceRegistration{
-		ID:   id.String(),
-		Name: name,
-		Port: port,
+	env := "production"
+	if isDevelopment {
+		env = "development"
 	}
-	err := c.consul.Agent().ServiceRegister(reg)
-	return id.String(), err
+
+	consulReg := &consul.AgentServiceRegistration{
+		ID:   fmt.Sprintf("%s.%s", reg.Name, id.String()),
+		Name: fmt.Sprintf("%s.%s", microserviceName, id.String()),
+		Port: reg.Port,
+		Tags: []string{env},
+		EnableTagOverride: false,
+	}
+	err := c.consul.Agent().ServiceRegister(consulReg)
+	c.services = append(c.services, consulReg.ID)
+	return consulReg.ID, err
 }
 
 func (c *ConsulClient) Clean() {

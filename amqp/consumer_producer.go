@@ -14,7 +14,7 @@ import (
 
 	"github.com/propsproject/goprops-toolkit/logger"
 	"github.com/streadway/amqp"
-	"github.com/propsproject/goprops-toolkit/service"
+	"github.com/propsproject/goprops-toolkit/utils/sharedconf"
 )
 
 // RecoverIntervalTime ...
@@ -123,7 +123,7 @@ func (rc *RabbitConsumerProducer) waitForCh() bool {
 	}
 }
 
-func (rc *RabbitConsumerProducer) Start(regCh chan service.ConsulRegistration)  {
+func (rc *RabbitConsumerProducer) Start(regCh chan sharedconf.ConsulRegistration)  {
 	rc.Run()
 }
 

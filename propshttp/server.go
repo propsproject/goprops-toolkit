@@ -25,13 +25,17 @@ type Router struct {
 	logger      *logger.Wrapper
 	shutdownSig chan *sync.WaitGroup
 	Name        string
+	Type        string
 }
 
 //NewRouter returns a new router
-func NewRouter(routes routing.Routes, config map[string]string, logger *logger.Wrapper, name string) *Router {
-	port, _ := strconv.Atoi(config["port"])
-	addr := fmt.Sprintf(":%s", config["port"])
-	mux := httprouter.New(httprouter.WithServiceName(config["name"]))
+func NewRouter(routes routing.Routes, port int, name string, logger *logger.Wrapper) *Router {
+	addr := fmt.Sprintf(":%v", port)
+	mux := httprouter.New(httprouter.WithServiceName(name))
+
+	check.DetailedHealthCheckName = name
+	check.DetailedHealthCheckType = "http"
+
 	router := &Router {
 		mux:         mux,
 		addr:        addr,

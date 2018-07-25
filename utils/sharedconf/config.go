@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/viper"
 	_ "github.com/spf13/viper/remote"
 	"sync"
+	"time"
 )
 
 const (
@@ -34,6 +35,53 @@ type loggerI struct {
 	once     sync.Once
 }
 
+type viperRuntime struct {
+	runtime *viper.Viper
+	address string
+	kv string
+	logger *propsLogger.Wrapper
+	conf *map[string]interface{}
+}
+
+func (v *viperRuntime) WatchConfig() error {
+	err := v.runtime.WatchRemoteConfigOnChannel()
+	if err != nil {
+		v.logger.Fatal(err)
+	}
+
+	for {
+		time.Sleep(time.Second * 5)
+		v.runtime.Unmarshal(v.conf)
+	}
+}
+
+func (v *viperRuntime) LoadConfig() error {
+	err := v.runtime.AddRemoteProvider(viperProvider, v.address, v.kv)
+	if err != nil {
+		return err
+	}
+
+	v.runtime.SetConfigType(configType)
+
+	err = v.runtime.ReadRemoteConfig()
+	if err != nil {
+		return err
+	}
+
+	v.runtime.Unmarshal(v.conf)
+	return err
+}
+
+func NewRuntimeViper(address, kv string, logger *propsLogger.Wrapper, runtimeConf *map[string]interface{}) *viperRuntime {
+	return &viperRuntime{
+		runtime: viper.New(),
+		address: address,
+		kv: kv,
+		logger: logger,
+		conf: runtimeConf,
+	}
+}
+
 func (c *Config) logger() *propsLogger.Wrapper {
 	c.loggerI.once.Do(func() {
 		c.loggerI.instance = propsLogger.NewLogger()
@@ -52,25 +100,23 @@ func (c *Config) consulClient() *ConsulClient {
 	return c.consulI.instance
 }
 
-func (c *Config) LoadConfig(microService string) error {
+func (c *Config) LoadConfig(microService string, runtimeConf *map[string]interface{}) error {
 	err := env.Parse(&c.consulI)
 	if err != nil {
 		return err
 	}
 
-	err = viper.AddRemoteProvider(viperProvider, c.consulI.Address, fmt.Sprintf("%s/%s", microservicesKey, microService))
+	v := NewRuntimeViper(c.consulI.Address, fmt.Sprintf("%s/%s", microservicesKey, microService), c.logger(), runtimeConf)
+	err = v.LoadConfig()
 	if err != nil {
 		return err
 	}
 
-	viper.SetConfigType(configType)
-	err = viper.ReadRemoteConfig()
-	if err != nil {
-		return err
-	}
+	go v.WatchConfig()
 
 	c.logger().Info(fmt.Sprintf("%s %s %s", "Config loaded for", microService, "from consul"))
 	c.consulClient()
+
 	return nil
 }
 

@@ -25,12 +25,11 @@ func main() {
 	route := routing.NewRoute(routeConf, handler)
 	routes := []*routing.Route{route}
 
-	routerServiceConf := map[string]string{"port": "3000"}
 	logger := propslogger.NewLogger()
 	name := "Example"
 
 
-	helloWorld := propshttp.NewRouter(routes, routerServiceConf, logger, name).AsService()
+	helloWorld := propshttp.NewRouter(routes, 3000, name, logger).AsService()
 
 	microservice := service.NewMicroService(name, "Example router", "v1").AddServices(helloWorld)
 	microservice.Run()

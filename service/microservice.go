@@ -81,8 +81,8 @@ func (m *MicroService) registerServices() {
 
 func (m *MicroService) LoadConfigs() {
 	m.once.Do(func() {
-		err := m.common.LoadConfig(m.Name)
-		if err != nil {
+		err := m.common.LoadConfig(m.Name, &m.Config)
+			if err != nil {
 			m.Logger().Fatal(err)
 		}
 	})

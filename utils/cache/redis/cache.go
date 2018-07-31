@@ -5,35 +5,46 @@ import (
 	"github.com/mediocregopher/radix.v2/redis"
 	"fmt"
 	propslogger "github.com/propsproject/goprops-toolkit/logger"
+	"github.com/mediocregopher/radix.v2/pool"
 )
 
+// connuri: localhost:6739
+const connURIFormat  = "%s:%v"
+
+type PCache struct {
+	logger *propslogger.Wrapper
+}
+
+func (pc *PCache) Redis(host string, port int, poolSize int) (*RedisCache, error) {
+	return NewRedisCache(host, port, poolSize, pc.logger)
+}
+
+func PropsCache(logger *propslogger.Wrapper) *PCache {
+	return &PCache{logger}
+}
+
 type RedisCache struct {
-	instance   *redis.Client
+	pool   *pool.Pool
 	logger *propslogger.Wrapper
 	initialized bool
 }
 
-func (rc *RedisCache) Client() *redis.Client {
+func (rc *RedisCache) Client() (*redis.Client, error) {
 	if !rc.initialized {
 		rc.logger.Warn("attempting to use redis conn that hasn't been initialized")
 	}
-	return rc.instance
+	return rc.pool.Get()
 }
 
-func (rc *RedisCache) CMD() *command {
-	return &command{instance: rc.instance}
+func buildConnStr(port int, host string) string {
+	return fmt.Sprintf(connURIFormat, host, port)
 }
 
-func NewRedisCache(host string, port int, logger *propslogger.Wrapper) (*RedisCache, error) {
-	conn, err := redis.Dial("tcp", fmt.Sprintf("%s:%v", host, port))
+func NewRedisCache(host string, port int, poolSize int, logger *propslogger.Wrapper) (*RedisCache, error) {
+	p, err := pool.New("tcp", buildConnStr(port, host), poolSize)
 	if err != nil {
 		return nil, fmt.Errorf(errOnOpenConnection, err)
 	}
 
-	if resp := conn.Cmd(PING); resp.Err != nil {
-		conn.Close()
-		return nil, fmt.Errorf(errOnOpenConnection, err)
-	}
-
-	return &RedisCache {instance: conn,logger: logger,initialized: true}, nil
+	return &RedisCache {pool: p, logger: logger,initialized: true}, nil
 }

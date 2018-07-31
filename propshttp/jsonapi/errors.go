@@ -1,29 +1,42 @@
 package jsonapi
 
-type Error struct {
+import (
+	"github.com/lann/builder"
+)
+
+type ResError struct {
 	Code   string      `json:"code"`
 	Detail string      `json:"detail"`
 	Source interface{} `json:"source"`
+	Status int         `json:"status"`
 }
 
-func (e *Error) SetCode(code string) *Error {
-	e.Code = code
-	return e
+type ErrorBuilder builder.Builder
+
+func (eb ErrorBuilder) Code(code string) ErrorBuilder {
+	return builder.Set(eb, "Code", code).(ErrorBuilder)
 }
 
-func (e *Error) SetDetail(detail string) *Error {
-	e.Detail = detail
-	return e
+func (eb ErrorBuilder) Detail(detail string) ErrorBuilder {
+	return builder.Set(eb, "Detail", detail).(ErrorBuilder)
 }
 
-func (e *Error) SetSource(source interface{}) *Error {
-	e.Source = source
-	return e
+func (eb ErrorBuilder) Source(source interface{}) ErrorBuilder {
+	return builder.Set(eb, "Source", source).(ErrorBuilder)
 }
 
-type Errors []*Error
-
-func ResponseError() *Error {
-	return &Error{}
+func (eb ErrorBuilder) Status(status int) ErrorBuilder {
+	return builder.Set(eb, "Status", status).(ErrorBuilder)
 }
 
+func (eb ErrorBuilder) Build() ResError {
+	return builder.GetStruct(eb).(ResError)
+}
+
+func (eb ErrorBuilder) BuildSlice() []ResError {
+	return []ResError{builder.GetStruct(eb).(ResError)}
+}
+
+func Error() ErrorBuilder {
+	return builder.Register(ErrorBuilder{}, ResError{}).(ErrorBuilder)
+}

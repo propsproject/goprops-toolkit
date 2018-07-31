@@ -2,6 +2,7 @@ package jsonapi
 
 import (
 	"reflect"
+	"github.com/lann/builder"
 )
 
 const (
@@ -10,67 +11,64 @@ const (
 )
 
 type Resource struct {
-	ResourceType string      `json:"type"`
-	ID           string      `json:"id"`
-	Data         interface{} `json:"attributes"`
+	ResourceType string      `json:"type,omitempty"`
+	ID           string      `json:"id,omitempty"`
+	Data         interface{} `json:"attributes,omitempty"`
 }
 
-func (r *Resource) HasIdentifier() bool {
-	return r.ID != "" && r.ResourceType != ""
+type ResResourceBuilder builder.Builder
+
+func (b ResResourceBuilder) ResourceType(resourceType string) ResResourceBuilder {
+	return builder.Set(b, "ResourceType", resourceType).(ResResourceBuilder)
 }
 
-type ResourceBuilder struct {
-	resource *Resource
+func (b ResResourceBuilder) ID(id string) ResResourceBuilder {
+	return builder.Set(b, "ID", id).(ResResourceBuilder)
 }
 
-func (r *ResourceBuilder) Resource() *Resource {
-	if ok := r.resource.HasIdentifier(); !ok {
-		r.GetIdentifier()
-	}
-
-	resource := &Resource{ResourceType: r.resource.ResourceType, ID: r.resource.ID, Data: r.resource.Data}
-	r.Reset()
-
-	return resource
+func (b ResResourceBuilder) Data(data interface{}) ResResourceBuilder {
+	id, resourceType := identifierOf(data)
+	return b.ID(id).ResourceType(resourceType).setData(data)
 }
 
-func (r *ResourceBuilder) GetIdentifier() *ResourceBuilder {
-	t := reflect.TypeOf(r.resource.Data)
+func (b ResResourceBuilder) setData(data interface{}) ResResourceBuilder {
+	return builder.Set(b, "Data", data).(ResResourceBuilder)
+}
+
+func (b ResResourceBuilder) Build() Resource{
+	return builder.GetStruct(b).(Resource)
+}
+
+func ResourceBuilder() ResResourceBuilder {
+	return builder.Register(ResResourceBuilder{}, Resource{}).(ResResourceBuilder)
+}
+
+func identifierOf(data interface{}) (string, string) {
+	var id, resourceType string
+	var idFound, resourceTypeFound, allFound bool
+
+	t := reflect.TypeOf(data)
 	for i := 0; i < t.NumField(); i++ {
-		field := t.Field(i)
+		id, idFound = idFieldLookup(t.Field(i).Tag)
+		resourceType, resourceTypeFound = resourceTypeFieldLookup(t.Field(i).Tag)
 
-		if tag := field.Tag.Get(idTagName); tag != "" {
-			v := reflect.ValueOf(r.resource.Data)
-			r.resource.ID = reflect.Indirect(v).FieldByName(field.Name).String()
-		}
-
-		if tag := field.Tag.Get(typeTagName); tag != "" {
-			v := reflect.ValueOf(r.resource.Data)
-			r.resource.ResourceType = reflect.Indirect(v).FieldByName(field.Name).String()
+		if idFound && resourceTypeFound {
+			break
 		}
 	}
 
-	if r.resource.ResourceType == "" || r.resource.ID == "" {
-		r.resource.ResourceType = t.Name()
-		r.resource.ID = ""
+	if allFound {
+		return id, resourceType
 	}
 
-	return r
+	return createDefaultIdentifier(t)
 }
 
-func (r *ResourceBuilder) WithDefinition (resourceType, id string) *ResourceBuilder {
-	r.resource.ResourceType = resourceType
-	r.resource.ID = id
-	return r
+func idFieldLookup(tag reflect.StructTag) (string, bool) {
+	return tag.Lookup(idTagName)
 }
 
-func (r *ResourceBuilder) SetData(data interface{}) *ResourceBuilder {
-	r.resource.Data = data
-	return r
-}
-
-func (r *ResourceBuilder) Reset() *ResourceBuilder {
-	r.resource = &Resource{}
-	return r
+func resourceTypeFieldLookup(tag reflect.StructTag) (string, bool) {
+	return tag.Lookup(typeTagName)
 }
 

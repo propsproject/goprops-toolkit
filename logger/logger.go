@@ -14,10 +14,21 @@ const (
 	stderr    = "stderr"
 )
 
+type PropsLogger interface {
+	Info(msg string, data ...Field)
+	Warn(msg string, data ...Field)
+	Error(err error, data ...Field)
+	Fatal(err error, data ...Field)
+}
+
 // Wrapper light convience wrapper around zap logger
 type Wrapper struct {
 	zapLogger *zap.Logger
+	Fields []Field
 }
+
+// Wrapper light convience wrapper around zap logger
+type WrapperWithFields Wrapper
 
 // Field convience struct for logs with fields, (support for strings only so far)
 type Field struct {

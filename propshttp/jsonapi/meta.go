@@ -1,6 +1,6 @@
 package jsonapi
 
-import "github.com/lann/builder"
+import "github.com/kc1116/builder"
 
 type Meta struct {
 	//The value of each meta member MUST be an object (a “meta object”).

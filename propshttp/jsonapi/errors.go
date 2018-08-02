@@ -1,7 +1,7 @@
 package jsonapi
 
 import (
-	"github.com/lann/builder"
+	"github.com/kc1116/builder"
 )
 
 type ResError struct {

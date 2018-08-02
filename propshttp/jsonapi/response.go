@@ -3,7 +3,7 @@ package jsonapi
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/lann/builder"
+	"github.com/kc1116/builder"
 	"net/http"
 )
 

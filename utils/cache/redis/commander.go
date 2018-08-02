@@ -3,7 +3,7 @@ package rediscache
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/lann/builder"
+	"github.com/kc1116/builder"
 	"github.com/mediocregopher/radix.v2/redis"
 	"time"
 )

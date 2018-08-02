@@ -2,7 +2,7 @@ package jsonapi
 
 import (
 	"reflect"
-	"github.com/lann/builder"
+	"github.com/kc1116/builder"
 )
 
 const (

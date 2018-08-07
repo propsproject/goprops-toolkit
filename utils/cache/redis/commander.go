@@ -1,83 +1,65 @@
 package rediscache
 
 import (
-	"encoding/base64"
+	"github.com/gomodule/redigo/redis"
 	"fmt"
-	"github.com/kc1116/builder"
-	"github.com/mediocregopher/radix.v2/redis"
-	"time"
+	"log"
 )
 
-type CommandBuilder builder.Builder
-
-func (cb CommandBuilder) CMD(cmd string) CommandBuilder {
-	return builder.Set(cb, "CMD", cmd).(CommandBuilder)
-}
-
-func (cb CommandBuilder) ARGS(args ...string) CommandBuilder {
-	return builder.Extend(cb, "ARGS", args).(CommandBuilder)
-}
-
-func (cb CommandBuilder) VAL(data ...interface{}) CommandBuilder {
-	return builder.Extend(cb, "Data", data).(CommandBuilder)
-}
-
-func (cb CommandBuilder) DO(conn *redis.Client) *Resp {
-	cmd := builder.GetStruct(cb).(Command)
-	return &Resp{conn.Cmd(cmd.Format())}
-}
-
-func (cb CommandBuilder) kv(key, value string) interface{} {
-	return map[string]string{key: value}
-}
-
-// WithData will create a new encoder from the data argument you provide that satisfies the Encoder interface.
-// It will return an initialized putcmd struct with commands only for adding data to redis
-func (cb CommandBuilder) encodeB64(data []byte) string {
-	return base64.StdEncoding.EncodeToString(data)
-}
-
-func Commander() CommandBuilder {
-	return builder.Register(CommandBuilder{}, Command{}).(CommandBuilder)
+type CommandBuilder struct {
+	Commands    []Command
 }
 
 type Command struct {
 	CMD  string
-	ARGS []string
-	Data []interface{}
+	ARGS []interface{}
 }
 
-func (c Command) Format() (string, []string, []interface{}) {
-	return c.CMD, c.ARGS, c.Data
+func (s *CommandBuilder) newCMD(cmd string, args []interface{}) Command {
+	return Command{CMD: cmd, ARGS: args}
 }
 
-type Resp struct {
-	RedisResp *redis.Resp
+func (s *CommandBuilder) CMD(cmd string, args []interface{}) *CommandBuilder {
+	s.Commands = append(s.Commands, s.newCMD(cmd, args))
+	return s
 }
 
-func (r *Resp) Decode(value *interface{}, d interface{}) error {
-	if r.RedisResp.Err != nil {
-		return fmt.Errorf("could not execute redis command: %v", r.RedisResp.Err.Error())
+func (s *CommandBuilder) DO(conn redis.Conn) ([]interface{}, []error) {
+	defer conn.Close()
+
+	var (
+		results []interface{}
+		errs []error
+	)
+
+	for _, cmd := range s.Commands {
+		log.Println(fmt.Sprintf("%v", cmd))
+
+		err := conn.Send(cmd.CMD, cmd.ARGS...)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("error sending pipeline command to redis (CMD: %s) (ARGS: %v) (%v)", cmd.CMD, cmd.ARGS, err))
+		}
 	}
 
-	b, err := r.RedisResp.Bytes()
+	err := conn.Flush()
 	if err != nil {
-		return err
+		errs = append(errs, fmt.Errorf("error flushing pipeline closing connection (%v)", err))
+		return nil, errs
 	}
 
-	err = NewDecoder(d).Decode(b, value)
-	if err != nil {
-		return err
+	for range s.Commands {
+		v, err := conn.Receive()
+		if err != nil {
+			errs = append(errs, fmt.Errorf("error receiving results from pipeline command to redis (%v)", err))
+		}
+
+		results = append(results, v)
 	}
 
-	return nil
+	return results, errs
 }
 
-func DurationInSec(duration time.Duration) string {
-	return fmt.Sprintf("%.0f", duration.Seconds())
+func Commander() *CommandBuilder {
+	return &CommandBuilder{make([]Command, 0)}
 }
 
-func DurationInMilli(duration time.Duration) string {
-	millis := duration * time.Millisecond
-	return fmt.Sprintf("%.0f", millis.Seconds())
-}

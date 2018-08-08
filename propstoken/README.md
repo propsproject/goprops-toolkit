@@ -1,3 +1,3 @@
 # propstoken
 
-Still in development, do not use
+Golang generated bindings for the PROPSToken contract

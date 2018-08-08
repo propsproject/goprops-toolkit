@@ -1,12 +1,12 @@
 # propstoken
 
 Golang generated bindings for the PROPSToken contract. Packages are under the bindings 
-deirectory. 
+directory. 
 
 ### Rinkeby
 
-- package: rinkeby
-- token address: 0xb6768cAFeE6C4CcE5A5643bC78DB09286A33a905
+- package: [rinkeby](https://github.com/PROPSProject/goprops-toolkit/tree/feature/balances-api-parallel/propstoken/bindings/rinkeby)
+- token address: [0xb6768cAFeE6C4CcE5A5643bC78DB09286A33a905](https://rinkeby.etherscan.io/address/0xb6768cafee6c4cce5a5643bc78db09286a33a905)
 - compiler: 0.4.24+commit.e67f0147.Emscripten.clang
 - generated from abi: 
     > [

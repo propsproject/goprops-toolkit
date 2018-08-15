@@ -2,7 +2,7 @@ package sharedconf
 
 import (
 	"fmt"
-	"github.com/satori/go.uuid"
+	"github.com/google/uuid"
 
 	consul "github.com/hashicorp/consul/api"
 )
@@ -32,7 +32,7 @@ func newConsulClient(endpoint string) (*ConsulClient, error) {
 
 // Register a service with consul local agent
 func (c *ConsulClient) Register(microserviceName string, reg ConsulRegistration, isDevelopment bool) (string, error) {
-	id, _ := uuid.NewV4()
+	id := uuid.New().String()
 
 	env := "production"
 	if isDevelopment {
@@ -40,8 +40,8 @@ func (c *ConsulClient) Register(microserviceName string, reg ConsulRegistration,
 	}
 
 	consulReg := &consul.AgentServiceRegistration{
-		ID:   fmt.Sprintf("%s.%s", reg.Name, id.String()),
-		Name: fmt.Sprintf("%s.%s", microserviceName, id.String()),
+		ID:   fmt.Sprintf("%s.%s", reg.Name, id),
+		Name: fmt.Sprintf("%s.%s", microserviceName, id),
 		Port: reg.Port,
 		Tags: []string{env},
 		EnableTagOverride: false,

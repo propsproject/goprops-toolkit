@@ -11,7 +11,7 @@ const (
 	PING = "PING"
 	LREM = "LREM"
 	SADD = "SADD"
-
+	SPOP = "SPOP"
 	ExpireInSeconds = "EX"
 	ExpireInMilliseconds = "PX"
 	OnlyIfKeyNotExist = "NX"

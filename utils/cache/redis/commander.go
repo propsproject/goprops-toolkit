@@ -3,7 +3,6 @@ package rediscache
 import (
 	"github.com/gomodule/redigo/redis"
 	"fmt"
-	"log"
 )
 
 type CommandBuilder struct {
@@ -33,8 +32,6 @@ func (s *CommandBuilder) DO(conn redis.Conn) ([]interface{}, []error) {
 	)
 
 	for _, cmd := range s.Commands {
-		log.Println(fmt.Sprintf("%v", cmd))
-
 		err := conn.Send(cmd.CMD, cmd.ARGS...)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("error sending pipeline command to redis (CMD: %s) (ARGS: %v) (%v)", cmd.CMD, cmd.ARGS, err))

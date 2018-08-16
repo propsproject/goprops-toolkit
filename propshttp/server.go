@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/propsproject/goprops-toolkit/propshttp/routing"
-	"github.com/propsproject/goprops-toolkit/logger"
+	"github.com/propsproject/goprops-toolkit/logging"
 	"gopkg.in/DataDog/dd-trace-go.v1/contrib/julienschmidt/httprouter"
 	"github.com/propsproject/goprops-toolkit/utils/sharedconf"
 	"github.com/propsproject/goprops-toolkit/propshttp/routing/v1/check"
@@ -22,14 +22,14 @@ type Router struct {
 	server      *http.Server
 	routes      routing.Routes
 	port        int
-	logger      *logger.Wrapper
+	logger      *logging.PLogger
 	shutdownSig chan *sync.WaitGroup
 	Name        string
 	Type        string
 }
 
 //NewRouter returns a new router
-func NewRouter(routes routing.Routes, port int, name string, logger *logger.Wrapper) *Router {
+func NewRouter(routes routing.Routes, port int, name string, logger *logging.PLogger) *Router {
 	addr := fmt.Sprintf(":%v", port)
 	mux := httprouter.New(httprouter.WithServiceName(name))
 
@@ -77,12 +77,12 @@ func (r *Router) registerRoutes() {
 }
 
 func (r *Router) logRoutes() {
-	r.logger.Info(r.routes.String())
+	r.logger.Info(r.routes.String()).Log()
 }
 
 //Start start http router
 func (r *Router) Start(regCh chan sharedconf.ConsulRegistration) {
-	r.logger.Info(fmt.Sprintf("Starting HTTP Router %s", r.Name), logger.Field{Key: "port", Value: strconv.Itoa(r.port)})
+	r.logger.Info(fmt.Sprintf("Starting HTTP Router %s", r.Name), logging.Field{Key: "port", Value: strconv.Itoa(r.port)}).Log()
 	r.logRoutes()
 
 	go func() {
@@ -102,10 +102,10 @@ func (r *Router) Start(regCh chan sharedconf.ConsulRegistration) {
 func (r *Router) WaitForShutdown()  {
 	for {
 		if wg := <- r.shutdownSig; wg != nil {
-			r.logger.Warn(fmt.Sprintf("Attempting graceful shutdown of HTTP server: %s", r.Name))
+			r.logger.Warn(fmt.Sprintf("Attempting graceful shutdown of HTTP server: %s", r.Name)).Log()
 			err := r.server.Shutdown(context.Background())
 			if err != nil {
-				r.logger.Warn(fmt.Sprintf("Could not gracefully shutdown HTTP server: %s", r.Name))
+				r.logger.Warn(fmt.Sprintf("Could not gracefully shutdown HTTP server: %s", r.Name)).Log()
 			}
 			wg.Done()
 			break

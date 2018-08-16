@@ -1,7 +1,7 @@
 package main
 
 import (
-	propslogger "github.com/propsproject/goprops-toolkit/logger"
+	propslogger "github.com/propsproject/goprops-toolkit/logging"
 	"github.com/propsproject/goprops-toolkit/propshttp"
 	"github.com/propsproject/goprops-toolkit/propshttp/routing"
 	"github.com/propsproject/goprops-toolkit/service"
@@ -25,7 +25,7 @@ func main() {
 	route := routing.NewRoute(routeConf, handler)
 	routes := []*routing.Route{route}
 
-	logger := propslogger.NewLogger()
+	logger := propslogger.NewLogger("example", true)
 	name := "Example"
 
 

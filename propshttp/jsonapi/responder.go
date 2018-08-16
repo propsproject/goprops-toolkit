@@ -3,7 +3,7 @@ package jsonapi
 import (
 	"net/http"
 	"fmt"
-	"github.com/propsproject/goprops-toolkit/logger"
+	"github.com/propsproject/goprops-toolkit/logging"
 )
 
 const (
@@ -12,7 +12,7 @@ const (
 
 type ReqResponder struct {
 	verbose bool
-	logger  *logger.Wrapper
+	logger  *logging.PLogger
 	*AllBuilders
 }
 
@@ -30,7 +30,7 @@ func (r *ReqResponder) Verbose() *ReqResponder {
 	return r
 }
 
-func (r *ReqResponder) Logger(logger  *logger.Wrapper) *ReqResponder {
+func (r *ReqResponder) Logger(logger  *logging.PLogger) *ReqResponder {
 	r.logger = logger
 	return r
 }
@@ -38,7 +38,7 @@ func (r *ReqResponder) Logger(logger  *logger.Wrapper) *ReqResponder {
 func (r *ReqResponder) log(response Response) *ReqResponder {
 	if r.verbose && r.logger != nil {
 		msg := fmt.Sprintf("http Response: %v", response)
-		r.logger.Info(msg)
+		r.logger.Info(msg).Log()
 	}
 
 	return r

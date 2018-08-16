@@ -9,13 +9,13 @@ import (
 	"github.com/cenkalti/backoff"
 	"github.com/propsproject/goprops-toolkit/testutils"
 	"github.com/streadway/amqp"
-	"github.com/propsproject/goprops-toolkit/logger"
+	"github.com/propsproject/goprops-toolkit/logging"
 )
 
 var testConsumer *RabbitConsumerProducer
 var testProducer *RabbitConsumerProducer
 var testCases []testutils.TestCase
-var log = logger.NewLogger()
+var log = logging.NewLogger()
 var stopContainer *chan bool
 
 const (

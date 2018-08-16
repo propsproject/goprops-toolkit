@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/caarlos0/env"
-	propsLogger "github.com/propsproject/goprops-toolkit/logger"
+	"github.com/propsproject/goprops-toolkit/logging"
 	"github.com/spf13/viper"
 	_ "github.com/spf13/viper/remote"
 	"sync"
@@ -19,9 +19,11 @@ const (
 )
 
 type Config struct {
-	consulI
-	loggerI
-	IsProduction bool `env:"false"`
+	consulI consulI
+	loggerI loggerI
+	Environment string `env:"ENVIRONMENT" envDefault:"development"`
+	ServiceName string
+
 }
 
 type consulI struct {
@@ -31,7 +33,7 @@ type consulI struct {
 }
 
 type loggerI struct {
-	instance *propsLogger.Wrapper
+	instance *logging.PLogger
 	once     sync.Once
 }
 
@@ -39,14 +41,14 @@ type viperRuntime struct {
 	runtime *viper.Viper
 	address string
 	kv string
-	logger *propsLogger.Wrapper
+	logger *logging.PLogger
 	conf *map[string]interface{}
 }
 
 func (v *viperRuntime) WatchConfig() error {
 	err := v.runtime.WatchRemoteConfigOnChannel()
 	if err != nil {
-		v.logger.Fatal(err)
+		v.logger.Fatal(err).Log()
 	}
 
 	for {
@@ -72,7 +74,7 @@ func (v *viperRuntime) LoadConfig() error {
 	return err
 }
 
-func NewRuntimeViper(address, kv string, logger *propsLogger.Wrapper, runtimeConf *map[string]interface{}) *viperRuntime {
+func NewRuntimeViper(address, kv string, logger *logging.PLogger, runtimeConf *map[string]interface{}) *viperRuntime {
 	return &viperRuntime{
 		runtime: viper.New(),
 		address: address,
@@ -82,9 +84,9 @@ func NewRuntimeViper(address, kv string, logger *propsLogger.Wrapper, runtimeCon
 	}
 }
 
-func (c *Config) logger() *propsLogger.Wrapper {
+func (c *Config) logger() *logging.PLogger {
 	c.loggerI.once.Do(func() {
-		c.loggerI.instance = propsLogger.NewLogger()
+		c.loggerI.instance = logging.NewLogger(c.ServiceName, c.Environment == "production")
 	})
 	return c.loggerI.instance
 }
@@ -106,6 +108,8 @@ func (c *Config) LoadConfig(microService string, runtimeConf *map[string]interfa
 		return err
 	}
 
+	c.ServiceName = microService
+
 	v := NewRuntimeViper(c.consulI.Address, fmt.Sprintf("%s/%s", microservicesKey, microService), c.logger(), runtimeConf)
 	err = v.LoadConfig()
 	if err != nil {
@@ -120,7 +124,7 @@ func (c *Config) LoadConfig(microService string, runtimeConf *map[string]interfa
 	return nil
 }
 
-func (c *Config) Logger() *propsLogger.Wrapper {
+func (c *Config) Logger() *logging.PLogger {
 	return c.logger()
 }
 

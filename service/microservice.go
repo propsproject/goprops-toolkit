@@ -4,7 +4,7 @@ import (
 	"github.com/propsproject/goprops-toolkit/utils/sharedconf"
 	"fmt"
 	"os"
-	"github.com/propsproject/goprops-toolkit/logger"
+	"github.com/propsproject/goprops-toolkit/logging"
 	"sync"
 )
 
@@ -81,14 +81,14 @@ func (m *MicroService) registerServices() {
 
 func (m *MicroService) LoadConfigs() {
 	m.once.Do(func() {
-		err := m.common.LoadConfig(m.Name)
-		if err != nil {
+		err := m.common.LoadConfig(m.Name, &m.Config)
+			if err != nil {
 			m.Logger().Fatal(err)
 		}
 	})
 }
 
-func (m *MicroService) Logger() *logger.Wrapper  {
+func (m *MicroService) Logger() *logging.PLogger {
 	return m.common.Logger()
 }
 

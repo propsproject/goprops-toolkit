@@ -5,7 +5,7 @@ import (
 
 	"github.com/pusher/pusher-http-go"
 	"fmt"
-	"github.com/propsproject/goprops-toolkit/logger"
+	"github.com/propsproject/goprops-toolkit/logging"
 )
 
 var registry *SocketRegistry
@@ -16,7 +16,7 @@ type SocketRegistry struct {
 	Clients    *sync.Map
 	Events     *sync.Map
 	shutdownSig chan bool
-	Logger *logger.Wrapper
+	Logger *logging.PLogger
 }
 
 // Payload ...
@@ -93,7 +93,7 @@ func (r *SocketRegistry) WaitForShutdown()  {
 	for {
 		select {
 		case <-r.shutdownSig:
-			r.Logger.Info(fmt.Sprintf("Received interrupt signal"))
+			r.Logger.Info(fmt.Sprintf("Received interrupt signal")).Log()
 			r.shutdownSig <- false
 		}
 	}
@@ -104,7 +104,7 @@ func (r *SocketRegistry) ShutDownSig() chan bool {
 }
 
 // NewPusherRegistry creates a new pusher registry
-func NewPusherRegistry(appID, key, secret, cluster string, events map[string]Event, logger *logger.Wrapper) *SocketRegistry {
+func NewPusherRegistry(appID, key, secret, cluster string, events map[string]Event, logger *logging.PLogger) *SocketRegistry {
 	pusherClient := pusher.Client{
 		AppId:   appID,
 		Key:     key,

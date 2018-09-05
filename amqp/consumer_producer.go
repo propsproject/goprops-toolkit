@@ -12,7 +12,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/propsproject/goprops-toolkit/logger"
+	"github.com/propsproject/goprops-toolkit/logging"
 	"github.com/streadway/amqp"
 	"github.com/propsproject/goprops-toolkit/utils/sharedconf"
 )
@@ -51,7 +51,7 @@ type RabbitConsumerProducer struct {
 	Messages        <-chan amqp.Delivery
 	PublishBuffer
 	Workers         uint64
-	Logger          *logger.Wrapper
+	Logger          *logging.PLogger
 	shutdownSig     chan bool
 }
 
@@ -78,18 +78,12 @@ func (rc *RabbitConsumerProducer) Run() (bool, error) {
 
 	if err := rc.Connect(); err != nil {
 		e := fmt.Errorf("RabbitMQ consumer connect error")
-		rc.Logger.Error(e,
-			logger.Field{"error", err.Error()},
-			logger.Field{"consumer-tag", rc.ConsumerTag},
-		)
+		rc.Logger.Error(e).WithField("error", err.Error()).WithField("consumer-tag", rc.ConsumerTag).Log()
 		return false, err
 	}
 	if err := rc.AnnounceQueue(); err != nil {
 		e := fmt.Errorf("RabbitMQ consumer announce error")
-		rc.Logger.Error(e,
-			logger.Field{"error", err.Error()},
-			logger.Field{"consumer-tag", rc.ConsumerTag},
-		)
+		rc.Logger.Error(e).WithField("error", err.Error()).WithField("consumer-tag", rc.ConsumerTag).Log()
 		return false, err
 	}
 
@@ -104,10 +98,8 @@ func (rc *RabbitConsumerProducer) Run() (bool, error) {
 func (rc *RabbitConsumerProducer) RunProducer() (bool, error) {
 	if err := rc.Connect(); err != nil {
 		e := fmt.Errorf("RabbitMQ Consumer run producer error")
-		rc.Logger.Error(e,
-			logger.Field{"error", err.Error()},
-			logger.Field{"consumer-tag", rc.ConsumerTag},
-		)
+		rc.Logger.Error(e).WithField("error", err.Error()).WithField("consumer-tag", rc.ConsumerTag).Log()
+
 		return false, err
 	}
 
@@ -157,13 +149,9 @@ func (rc *RabbitConsumerProducer) Connect() error {
 			select {
 			case err := <-rc.Conn.NotifyClose(make(chan *amqp.Error)):
 				if err != nil {
-					rc.Logger.Warn("RabbitMQ connection closed",
-						logger.Field{"reason", fmt.Sprintf("%v", err.Reason)},
-						logger.Field{"code", fmt.Sprintf("%v", strconv.Itoa(err.Code))},
-						logger.Field{"consumer-tag", rc.ConsumerTag},
-					)
+					rc.Logger.Warn("RabbitMQ connection closed").WithField("reason", fmt.Sprintf("%v", err.Reason)).WithField("code", fmt.Sprintf("%v", strconv.Itoa(err.Code))).WithField("consumer-tag", rc.ConsumerTag).Log()
 					// Let Handle know it's not time to reconnect
-					rc.Done <- errors.New("Channel Closed")
+					rc.Done <- errors.New("channel closed")
 				}
 			}
 		}
@@ -264,10 +252,8 @@ func (rc *RabbitConsumerProducer) MonitorConn() {
 				err := rc.ReConnect(retryTime)
 				if err != nil {
 					e := fmt.Errorf("RabbitMQ Consumer reconnection error")
-					rc.Logger.Error(e,
-						logger.Field{"error", err.Error()},
-						logger.Field{"consumer-tag", rc.ConsumerTag},
-					)
+					rc.Logger.Error(e).WithField("error", err.Error()).WithField("consumer-tag", rc.ConsumerTag).Log()
+
 					retryTime++
 				} else {
 					break
@@ -317,7 +303,7 @@ func (rc *RabbitConsumerProducer) Consume() {
 }
 
 // NewConsumer ...
-func NewConsumer(uri, exchangeName, routingKey, exchangeType string, handle func(amqp.Delivery) bool, logger *logger.Wrapper) *RabbitConsumerProducer {
+func NewConsumer(uri, exchangeName, routingKey, exchangeType string, handle func(amqp.Delivery) bool, logger *logging.PLogger) *RabbitConsumerProducer {
 	consumer := &RabbitConsumerProducer{
 		ConsumerTag:     Identity(),
 		URI:             uri,
@@ -357,7 +343,7 @@ func (rc *RabbitConsumerProducer) failOnError(errs ...interface{}) {
 		b.WriteString(fmt.Sprintf("%v\n", err.(error).Error()))
 	}
 
-	rc.Logger.Error(errors.New(b.String()))
+	rc.Logger.Error(errors.New(b.String())).Log()
 }
 
 func (rc *RabbitConsumerProducer) WaitForShutdown()  {

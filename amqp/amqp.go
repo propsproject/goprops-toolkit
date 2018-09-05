@@ -1,17 +1,15 @@
 package amqp
 
-import "context"
-
 // Start start all consumers and publisher
-func Start(consumers []ConsumerProducer, ctx context.Context) {
+func Start(consumers []ConsumerProducer) {
 	for _, consumer := range consumers {
-		go consumer.Run(ctx)
+		go consumer.Run()
 	}
 }
 
 // StartProducers start all consumer producers only as producers, don't declare or announce a queue
-func StartProducers(consumers []ConsumerProducer, ctx context.Context) {
+func StartProducers(consumers []ConsumerProducer) {
 	for _, consumer := range consumers {
-		go consumer.RunProducer(ctx)
+		go consumer.RunProducer()
 	}
 }

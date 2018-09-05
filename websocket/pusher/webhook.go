@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/propsproject/goprops-toolkit/logger"
+	"github.com/propsproject/goprops-toolkit/logging"
 	"github.com/pusher/pusher-http-go"
 	"context"
 )
@@ -15,13 +15,13 @@ func (r *SocketRegistry) HandlePrecenseWebHook(ctx context.Context, req *http.Re
 	var payload pusher.Webhook
 	b, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		ctx.Value("logger").(logger.Wrapper).Error(err)
+		ctx.Value("logging").(logging.PLogger).Error(err)
 		return err
 	}
 
 	err = json.Unmarshal(b, &payload)
 	if err != nil {
-		ctx.Value("logger").(logger.Wrapper).Error(err)
+		ctx.Value("logging").(logging.PLogger).Error(err)
 		return err
 	}
 

@@ -1,7 +1,7 @@
 package main
 
 import (
-	propslogger "github.com/propsproject/goprops-toolkit/logger"
+	propslogger "github.com/propsproject/goprops-toolkit/logging"
 	"github.com/propsproject/goprops-toolkit/propshttp"
 	"github.com/propsproject/goprops-toolkit/propshttp/routing"
 	"github.com/propsproject/goprops-toolkit/service"
@@ -25,12 +25,11 @@ func main() {
 	route := routing.NewRoute(routeConf, handler)
 	routes := []*routing.Route{route}
 
-	routerServiceConf := map[string]string{"port": "3000"}
-	logger := propslogger.NewLogger()
+	logger := propslogger.NewLogger("example", true)
 	name := "Example"
 
 
-	helloWorld := propshttp.NewRouter(routes, routerServiceConf, logger, name).AsService()
+	helloWorld := propshttp.NewRouter(routes, 3000, name, logger).AsService()
 
 	microservice := service.NewMicroService(name, "Example router", "v1").AddServices(helloWorld)
 	microservice.Run()

@@ -6,8 +6,9 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.uber.org/zap"
-	"strings"
 	"fmt"
+	"strings"
+	"runtime"
 )
 
 const (
@@ -36,17 +37,13 @@ type Log struct {
 	Fields []Field
 }
 
-func (l *Log) WithField(k, v string) *Log {
-	l.Fields = append(l.Fields, Field{Key:k, Value:v})
+func (l *Log) WithField(k string, v interface{}) *Log {
+	l.Fields = append(l.Fields, NewField(k, v))
 	return l
 }
 
 func (l *Log) setMessage(v ...interface{}) *Log {
-	var builder strings.Builder
-	for _, str := range v {
-		builder.WriteString(fmt.Sprintf("%v", str))
-	}
-	l.message = builder.String()
+	l.message = GetString(v)
 	return l
 }
 
@@ -54,7 +51,7 @@ func (l *Log) Log() {
 	l.loggerInstance.log(l.message, l.severity, l.Fields...)
 }
 
-func NewLog(logger *PLogger, severity int, v ...interface{}) *Log {
+func NewLog(logger *PLogger, severity int, v interface{}) *Log {
 	log := &Log{loggerInstance: logger, severity: severity}
 	return log.setMessage(v)
 }
@@ -62,6 +59,7 @@ func NewLog(logger *PLogger, severity int, v ...interface{}) *Log {
 // PLogger light convience wrapper around zap logging
 type PLogger struct {
 	zapLogger *zap.Logger
+	DefaultFields []Field
 }
 
 // Field convience struct for logs with fields, (support for strings only so far)
@@ -75,46 +73,87 @@ var Logger *PLogger
 
 // Info ...
 func (l *PLogger) Info(v ...interface{}) *Log {
-	return NewLog(l, 0, v...)
+	return NewLog(&PLogger{zapLogger: l.zapLogger.WithOptions()}, 0, v)
 }
 
 //Warn ...
 func (l *PLogger) Warn(v ...interface{}) *Log {
-	return NewLog(l, 1, v...)
+	return NewLog(&PLogger{zapLogger: l.zapLogger.WithOptions()}, 1, v)
 }
 
 // Error ...
 func (l *PLogger) Error(v ...interface{}) *Log {
-	return NewLog(l, 2, v...)
+	return NewLog(&PLogger{zapLogger: l.zapLogger.WithOptions()}, 2, v)
 }
 
 // Fatal ...
 func (l *PLogger) Fatal(v ...interface{}) *Log {
-	return NewLog(l, 3, v...)
+	return NewLog(&PLogger{zapLogger: l.zapLogger.WithOptions()}, 3, v)
 }
 
 func (l *PLogger) log(msg string, severity int, fields ...Field) {
+	allFields := append(l.DefaultFields, fields...)
 	switch severity {
 	case 0:
-		l.zapLogger.Info(msg, Fields(fields...)...)
+		l.zapLogger.Info(msg, ToZapFields(allFields...)...)
 	case 1:
-		l.zapLogger.Warn(msg, Fields(fields...)...)
+		l.zapLogger.Warn(msg, ToZapFields(allFields...)...)
 	case 2:
-		l.zapLogger.Error(msg, Fields(fields...)...)
+		l.zapLogger.Error(msg, ToZapFields(allFields...)...)
 	case 3:
-		l.zapLogger.Fatal(msg, Fields(fields...)...)
+		l.zapLogger.Fatal(msg, ToZapFields(allFields...)...)
 		os.Exit(1)
 	}
 }
 
-// Fields creates fields map for log message
-func Fields(f ...Field) []zapcore.Field {
+func (l *PLogger) Instance(name string) *PLogger {
+	return &PLogger{
+		zapLogger: l.zapLogger.Named(name),
+		DefaultFields: l.DefaultFields,
+	}
+}
+
+// ToZapFields creates fields map for log message
+func ToZapFields(f ...Field) []zapcore.Field {
 	var fields []zapcore.Field
 	for _, field := range f {
 		fields = append(fields, zap.String(field.Key, field.Value))
 	}
 
 	return fields
+}
+
+func NewField(k string, v interface{}) Field {
+	return Field{Key:k, Value: GetString(v)}
+}
+
+func GetString(v ...interface{}) string {
+	var builder strings.Builder
+	for _, value := range v {
+		switch value.(type) {
+		case string:
+			builder.WriteString(fmt.Sprintf("%s ", value.(string)))
+		case error:
+			builder.WriteString(fmt.Sprintf("%s ", value.(error).Error()))
+		default:
+			builder.WriteString(fmt.Sprintf("%v ", value))
+		}
+	}
+
+	return builder.String()
+}
+
+func GetCallerExtra() []Field {
+	pc := make([]uintptr, 15)
+	n := runtime.Callers(15, pc)
+	frames := runtime.CallersFrames(pc[:n])
+	frame, _ := frames.Next()
+
+	return []Field{
+		NewField("file-name", frame.File),
+		NewField("line-number", frame.Line),
+		NewField("func-name", frame.Function),
+	}
 }
 
 var highPriority = zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
@@ -129,8 +168,6 @@ var (
 	jsonErrors = zapcore.AddSync(os.Stdout)
 	productionConfig = zap.NewProductionEncoderConfig()
 
-	consoleDebugging = zapcore.Lock(os.Stdout)
-	consoleErrors = zapcore.Lock(os.Stderr)
 	developmentConfig = zap.NewDevelopmentConfig()
 )
 
@@ -152,28 +189,29 @@ func DefaultOptions(name string) []zap.Option {
 }
 
 func initProductionLogger(service string) *zap.Logger {
-	productionConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	jsonEncoder := zapcore.NewJSONEncoder(productionConfig)
-	cors := []zapcore.Core{zapcore.NewCore(jsonEncoder, jsonErrors, highPriority), zapcore.NewCore(jsonEncoder, jsonDebugging, lowPriority)}
+	cors := []zapcore.Core{zapcore.NewCore(jsonEncoder, jsonErrors, highPriority), zapcore.NewCore(jsonEncoder, jsonDebugging, highPriority)}
 	core := zapcore.NewTee(cors...)
 	return zap.New(core).WithOptions(DefaultOptions(service)...)
 }
 
 func initDevelopmentLogger(service string) *zap.Logger {
 	developmentConfig.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
-	consoleEncoder := zapcore.NewConsoleEncoder(developmentConfig.EncoderConfig)
-	cors := []zapcore.Core{zapcore.NewCore(consoleEncoder, consoleErrors, highPriority), zapcore.NewCore(consoleEncoder, consoleDebugging, lowPriority)}
-	core := zapcore.NewTee(cors...)
-	return zap.New(core).WithOptions(DefaultOptions(service)...)
+	l, _:= developmentConfig.Build(DefaultOptions(service)...)
+	return l
 }
 
-func NewLogger(service string, production bool) *PLogger {
+func NewLogger(service string, production bool, defaultFields ...Field) *PLogger {
 	var zapLogger *zap.Logger
+
 	if production {
 		zapLogger = initProductionLogger(service)
 	} else {
 		zapLogger = initDevelopmentLogger(service)
 	}
 
-	return &PLogger{zapLogger}
+	return &PLogger{
+		zapLogger: zapLogger,
+		DefaultFields: defaultFields,
+	}
 }

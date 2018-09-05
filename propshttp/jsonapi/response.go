@@ -100,9 +100,7 @@ func (r *HTTPResponse) Respond(w http.ResponseWriter) error {
 	if err := r.writeHeaders(w); err != nil {
 		return err
 	}
-
-	println(fmt.Sprintf("%v", r))
-
+	
 	if err := json.NewEncoder(w).Encode(&r.Response); err != nil {
 		return fmt.Errorf(errMarshallingResponseJSON, r, err)
 	}

@@ -1,15 +1,13 @@
 package rediscache
 
-
 import (
-	"github.com/gomodule/redigo/redis"
 	"fmt"
+	"github.com/go-redis/redis"
 	propslogger "github.com/propsproject/goprops-toolkit/logging"
-	"time"
 )
 
 // connuri: localhost:6739
-const connURIFormat  = "%s:%v"
+const connURIFormat = "%s:%v"
 
 type PCache struct {
 	logger *propslogger.PLogger
@@ -24,26 +22,16 @@ func PropsCache(logger *propslogger.PLogger) *PCache {
 }
 
 type RedisCache struct {
-	pool   *redis.Pool
-	logger *propslogger.PLogger
+	client      *redis.Client
+	logger      *propslogger.PLogger
 	initialized bool
 }
 
-func (rc *RedisCache) Client() redis.Conn {
+func (rc *RedisCache) Client() *redis.Client {
 	if !rc.initialized {
 		rc.logger.Warn("attempting to use redis conn that hasn't been initialized").Log()
 	}
-	return rc.pool.Get()
-}
-
-func newPool(host string, port int, poolSize int) *redis.Pool {
-	return &redis.Pool{
-		MaxIdle: poolSize,
-		IdleTimeout: 240 * time.Second,
-		Dial: func () (redis.Conn, error) {
-			return redis.Dial("tcp", buildConnStr(port, host))
-		},
-	}
+	return rc.client
 }
 
 func buildConnStr(port int, host string) string {
@@ -51,6 +39,12 @@ func buildConnStr(port int, host string) string {
 }
 
 func NewRedisCache(host string, port int, poolSize int, logger *propslogger.PLogger) *RedisCache {
-	pool := newPool(host, port, poolSize)
-	return &RedisCache {pool: pool, logger: logger,initialized: true}
+	return &RedisCache{
+		client: redis.NewClient(&redis.Options{
+			Network: "tcp",
+			Addr:    buildConnStr(port, host),
+		}),
+		logger:      logger,
+		initialized: true,
+	}
 }

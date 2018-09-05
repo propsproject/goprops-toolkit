@@ -9,6 +9,7 @@ import (
 	_ "github.com/spf13/viper/remote"
 	"sync"
 	"time"
+	"os"
 )
 
 const (
@@ -86,7 +87,8 @@ func NewRuntimeViper(address, kv string, logger *logging.PLogger, runtimeConf *m
 
 func (c *Config) logger() *logging.PLogger {
 	c.loggerI.once.Do(func() {
-		c.loggerI.instance = logging.NewLogger(c.ServiceName, c.Environment == "production")
+		environment := os.Getenv("ENVIRONMENT") == "production"
+		c.loggerI.instance = logging.NewLogger(c.ServiceName, environment)
 	})
 	return c.loggerI.instance
 }

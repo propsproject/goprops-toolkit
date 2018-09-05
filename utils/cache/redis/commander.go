@@ -30,12 +30,13 @@ func (s *CommandBuilder) DO(conn redis.Conn) ([]interface{}, []error) {
 		results []interface{}
 		errs []error
 	)
-
 	for _, cmd := range s.Commands {
 		err := conn.Send(cmd.CMD, cmd.ARGS...)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("error sending pipeline command to redis (CMD: %s) (ARGS: %v) (%v)", cmd.CMD, cmd.ARGS, err))
 		}
+
+		return nil, errs
 	}
 
 	err := conn.Flush()
@@ -49,10 +50,8 @@ func (s *CommandBuilder) DO(conn redis.Conn) ([]interface{}, []error) {
 		if err != nil {
 			errs = append(errs, fmt.Errorf("error receiving results from pipeline command to redis (%v)", err))
 		}
-
 		results = append(results, v)
 	}
-
 	return results, errs
 }
 

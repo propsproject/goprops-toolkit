@@ -33,7 +33,6 @@ type MicroService struct {
 	Description string
 	Version string
 	common sharedconf.Config
-	ShutdownListener *GracefulShutdown
 	services []Service
 	Config map[string]interface{}
 	ConfigPath string
@@ -55,25 +54,41 @@ func (m *MicroService) AddServices(services ...Service) *MicroService {
 }
 
 func (m *MicroService) Run() {
+	var wg sync.WaitGroup
+
 	for _, service := range m.services {
 		go service.Start(m.consulRegCh)
+		wg.Add(1)
 	}
 
 	go m.registerServices()
+	go m.listenForShutdowns(&wg)
 
-	m.ShutdownListener.ListenForServices(m.services)
+	wg.Wait()
+
+	m.Logger().Info("All services shutdown exiting").Log()
 	m.Consul().Clean()
-	os.Exit(0)
+	defer os.Exit(0)
+}
+
+func (m *MicroService) listenForShutdowns(wg *sync.WaitGroup)  {
+	for {
+		for _, service := range m.services {
+			if <- service.ShutDownSig()  == true {
+				wg.Done()
+			}
+		}
+	}
 }
 
 func (m *MicroService) registerServices() {
 	for reg := range m.consulRegCh {
 		if m.IsDevelopment {
-			m.Logger().Warn(fmt.Sprintf("(%s) service running in development mode. No Consul configuration was loaded. ", m.Name))
+			m.Logger().Warn(fmt.Sprintf("(%s) service running in development mode. No Consul configuration was loaded. ", m.Name)).Log()
 		} else {
 			_, err := m.Consul().Register(m.Name, reg, m.IsDevelopment)
 			if err != nil {
-				m.Logger().Warn(fmt.Sprintf("error registering service with consul: %v", err))
+				m.Logger().Warn(fmt.Sprintf("error registering service with consul: %v", err)).Log()
 			}
 		}
 	}
@@ -83,7 +98,7 @@ func (m *MicroService) LoadConfigs() {
 	m.once.Do(func() {
 		err := m.common.LoadConfig(m.Name, &m.Config)
 			if err != nil {
-			m.Logger().Fatal(err)
+			m.Logger().Fatal(err).Log()
 		}
 	})
 }
@@ -103,7 +118,6 @@ func NewMicroService(name, description, version string) *MicroService {
 		Description: description,
 		Version: version,
 		ShutDownSig: make(chan bool),
-		ShutdownListener: NewGracefulShutDownListener(defaultSignals),
 	}
 }
 

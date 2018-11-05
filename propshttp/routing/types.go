@@ -1,20 +1,31 @@
 package routing
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/julienschmidt/httprouter"
 	"net/http"
 )
 
-//Route route struct
+var (
+	defaultProtocols    = []string{"http"}
+	defaultHosts        = []string{"127.0.0.1"}
+	defaultStripPath    = false
+	defaultPreserveHost = false
+)
+
+// Route route struct
 type Route struct {
+	Config  *RouteConfig
+	Version string
+	Service string
+	Handler httprouter.Handle
+}
+
+type RouteConfig struct {
 	Name         string
 	Method       string
 	ResourcePath string
-	Version      string
 	NameSpace    string
-	Handler      httprouter.Handle
 }
 
 type RouteMiddleWare func(w http.ResponseWriter, r *http.Request, p httprouter.Params, next httprouter.Handle)
@@ -31,37 +42,43 @@ func (r *Route) use(mw RouteMiddleWare) httprouter.Handle {
 	}
 }
 
+// GetURI ...
+func (r *Route) GetURI() string {
+	return fmt.Sprintf("/%v%v%v", r.Version, r.Config.NameSpace, r.Config.ResourcePath)
+}
+
+// DownstreamURI uri without version prefix.
+// This uri is used for kong apigateway route configuration, the version prefix will be used as the upstream path of the service.
+func (r *Route) DownstreamURI() string {
+	return fmt.Sprintf("/%v%v", r.Config.NameSpace, r.Config.ResourcePath)
+}
+
+func NewRoute(config *RouteConfig, handler httprouter.Handle) *Route {
+	return &Route{
+		Config:  config,
+		Handler: handler,
+	}
+
+}
+
 func (r *Route) String() string {
 	return fmt.Sprintf("Name: %v, Method: %v, Version: %v, URI: %v",
-		r.Name, r.Method, r.Version, r.GetURI(),
+		r.Config.Name, r.Config.Method, r.Version, r.GetURI(),
 	)
 }
 
-// GetURI ...
-func (r *Route) GetURI() string {
-	return fmt.Sprintf("/%v%v%v", r.Version, r.NameSpace, r.ResourcePath)
-}
-
-func NewRoute(conf map[string]string, handler httprouter.Handle) *Route {
-	return &Route{
-		Name:         conf["name"],
-		Method:       conf["method"],
-		ResourcePath: conf["resourcePath"],
-		Version:      conf["version"],
-		NameSpace:    conf["namespace"],
-		Handler:      handler,
-	}
+func (r *Route) GetStrData() []string {
+	return []string{r.Config.Name, r.Config.Method, r.GetURI()}
 }
 
 // Routes ...
 type Routes []*Route
 
-func (r *Routes) String() string {
-	var buffer bytes.Buffer
-	buffer.WriteString("Routes\n")
-	for _, route := range *r {
-		buffer.WriteString(fmt.Sprintf("\t%v\n", route.String()))
+func (r Routes) GetStrData() [][]string {
+	data := make([][]string, len(r))
+	for _, route := range r {
+		data = append(data, route.GetStrData())
 	}
 
-	return buffer.String()
+	return data
 }

@@ -11,12 +11,11 @@ type healthy struct {
 	Status string `json:"status"`
 }
 
-var healthCheckConf = map[string]string{
-	"name":"Health check endpoint for server ping",
-	"resourcePath":"/health",
-	"method":"GET",
-	"namespace":namespace,
-	"version":version,
+var healthCheckConf = &routing.RouteConfig{
+	Name:         "Health check - endpoint for server ping",
+	ResourcePath: "/health",
+	Method:       "GET",
+	NameSpace:    namespace,
 }
 
 var healthCheckHandler = func(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {

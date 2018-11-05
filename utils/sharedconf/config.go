@@ -126,6 +126,24 @@ func (c *Config) LoadConfig(microService string, runtimeConf *map[string]interfa
 	return nil
 }
 
+func (c *Config) LoadRemoteConfig(microService string) (*viper.Viper, error) {
+	err := env.Parse(&c.consulI)
+	if err != nil {
+		return nil, err
+	}
+
+	v := viper.New()
+	v.AddRemoteProvider("consul", c.consulI.Address, fmt.Sprintf("%s/%s", microservicesKey, microService))
+	viper.SetConfigType("json")
+
+	err = v.ReadRemoteConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	return v, nil
+}
+
 func (c *Config) Logger() *logging.PLogger {
 	return c.logger()
 }

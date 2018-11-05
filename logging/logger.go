@@ -42,7 +42,7 @@ func (l *Log) WithField(k string, v interface{}) *Log {
 	return l
 }
 
-func (l *Log) setMessage(v ...interface{}) *Log {
+func (l *Log) setMessage(v interface{}) *Log {
 	l.message = GetString(v)
 	return l
 }
@@ -127,9 +127,9 @@ func NewField(k string, v interface{}) Field {
 	return Field{Key:k, Value: GetString(v)}
 }
 
-func GetString(v ...interface{}) string {
+func GetString(v interface{}) string {
 	var builder strings.Builder
-	for _, value := range v {
+	for _, value := range v.([]interface{}) {
 		switch value.(type) {
 		case string:
 			builder.WriteString(fmt.Sprintf("%s ", value.(string)))

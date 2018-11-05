@@ -19,12 +19,11 @@ type DetailedHealthCheckResponse struct {
 	Type  string      `json:"type"`
 }
 
-var detailedHealthCheckConf = map[string]string{
-	"name":         "Detailed Health check endpoint for server ping",
-	"resourcePath": "/detailed-health",
-	"method":       "GET",
-	"namespace":    namespace,
-	"version":      version,
+var detailedHealthCheckConf = &routing.RouteConfig{
+	Name:         "Detailed Health check endpoint for server ping",
+	ResourcePath: "/detailed-health",
+	Method:       "GET",
+	NameSpace:    namespace,
 }
 
 var detailedHealthCheckHandler = func(w http.ResponseWriter, _ *http.Request, p httprouter.Params) {

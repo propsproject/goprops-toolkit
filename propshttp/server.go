@@ -39,56 +39,6 @@ type Router struct {
 	logger      *logging.PLogger
 	shutdownSig chan bool
 	Config      *viper.Viper
-	MetaData    kong.ServiceMetaData
-}
-
-// SetDefaults sets default service configuration
-func (r *Router) SetDefaults() *Router {
-	r.MetaData.Name = r.Name
-	r.MetaData.Protocol = r.Config.GetString("protocol")
-	r.MetaData.Host = r.Config.GetString("host")
-	r.MetaData.URL = fmt.Sprintf("%s/%s", r.Config.GetString("host"), r.Config.GetString("version"))
-	return r.setConnectTimeout().setReadTimeout().setWriteTimeout().setRetries()
-}
-
-func (r *Router) setRetries() *Router {
-	if retries := r.Config.GetInt("retries"); retries > 0 {
-		r.MetaData.Retries = retries
-	} else {
-		r.MetaData.Retries = defaultRetries
-	}
-
-	return r
-}
-
-func (r *Router) setConnectTimeout() *Router {
-	if connectTimeout := r.Config.GetInt("connect-timeout"); connectTimeout > 0 {
-		r.MetaData.ConnectTimeout = connectTimeout
-	} else {
-		r.MetaData.ConnectTimeout = connectTimeout
-	}
-
-	return r
-}
-
-func (r *Router) setWriteTimeout() *Router {
-	if writeTimeout := r.Config.GetInt("write-timeout"); writeTimeout > 0 {
-		r.MetaData.WriteTimeout = writeTimeout
-	} else {
-		r.MetaData.WriteTimeout = defaultWriteTimeout
-	}
-
-	return r
-}
-
-func (r *Router) setReadTimeout() *Router {
-	if readTimeout := r.Config.GetInt("read-timeout"); readTimeout > 0 {
-		r.MetaData.ReadTimeout = readTimeout
-	} else {
-		r.MetaData.ReadTimeout = defaultReadTimeout
-	}
-
-	return r
 }
 
 func (r *Router) ServiceURL() string {

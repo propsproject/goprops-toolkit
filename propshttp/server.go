@@ -6,7 +6,6 @@ import (
 	"context"
 	"github.com/olekukonko/tablewriter"
 	"github.com/propsproject/goprops-toolkit/logging"
-	"github.com/propsproject/goprops-toolkit/propshttp/kong"
 	"github.com/propsproject/goprops-toolkit/propshttp/routing"
 	"github.com/propsproject/goprops-toolkit/propshttp/routing/v1/check"
 	"github.com/propsproject/goprops-toolkit/service"
@@ -175,5 +174,5 @@ func NewRouter(v *viper.Viper, routes routing.Routes, logger *logging.PLogger) *
 
 	//TODO: setup proper CORS configuration
 	router.registerRoutes()
-	return router.SetDefaults()
+	return router
 }

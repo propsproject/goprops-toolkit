@@ -1,19 +1,20 @@
 package propshttp
 
 import (
+	"context"
 	"fmt"
 	"net/http"
-	"context"
+	"os"
+	"os/signal"
+	"strconv"
+	"syscall"
+
 	"github.com/olekukonko/tablewriter"
 	"github.com/propsproject/goprops-toolkit/logging"
 	"github.com/propsproject/goprops-toolkit/propshttp/routing"
 	"github.com/propsproject/goprops-toolkit/propshttp/routing/v1/check"
 	"github.com/spf13/viper"
 	"gopkg.in/DataDog/dd-trace-go.v1/contrib/julienschmidt/httprouter"
-	"os"
-	"os/signal"
-	"strconv"
-	"syscall"
 )
 
 //Router ...
@@ -116,7 +117,7 @@ func (r *Router) listen(idleConnsClosed chan struct{}) {
 		// Error from closing listeners, or context timeout:
 		r.logger.Warnf("Could not gracefully shutdown HTTP server: %s", r.Name)
 	}
-	zclose(idleConnsClosed)
+	close(idleConnsClosed)
 }
 
 func (r *Router) Port() string {

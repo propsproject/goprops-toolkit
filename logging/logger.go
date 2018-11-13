@@ -11,55 +11,19 @@ import (
 	"runtime"
 )
 
-const (
-	devLogOut = "./logs/development.log"
-	stderr    = "stderr"
-)
-
-type PropsLogger interface {
-	Info(v ...interface{})
-	Warn(v ...interface{})
-	Error(v ...interface{})
-	Fatal(v ...interface{})
-}
-
-type Message interface {
-	SetMessage(v ...interface{}) *Message
-	InitErr(err error, logger *PropsLogger) *Message
-	WithField(field ...Field) *Message
-	Log()
-}
-
-type Log struct {
-	loggerInstance *PLogger
-	severity int // 0=info, 1=warn, 2=error, 3=fatal
-	message string
+type Logger struct {
+	zapLogger *zap.Logger
 	Fields []Field
+	DefaultFields []Field
 }
 
-func (l *Log) WithField(k string, v interface{}) *Log {
+func (l *Logger) WithField(k string, v ...interface{}) *Logger {
 	l.Fields = append(l.Fields, NewField(k, v))
 	return l
 }
 
-func (l *Log) setMessage(v interface{}) *Log {
-	l.message = GetString(v)
-	return l
-}
-
-func (l *Log) Log() {
-	l.loggerInstance.log(l.message, l.severity, l.Fields...)
-}
-
-func NewLog(logger *PLogger, severity int, v interface{}) *Log {
-	log := &Log{loggerInstance: logger, severity: severity}
-	return log.setMessage(v)
-}
-
-// PLogger light convience wrapper around zap logging
-type PLogger struct {
-	zapLogger *zap.Logger
-	DefaultFields []Field
+func (l *Logger) flushFields() {
+	l.Fields = []Field{}
 }
 
 // Field convience struct for logs with fields, (support for strings only so far)
@@ -68,49 +32,54 @@ type Field struct {
 	Value string
 }
 
-// Logger ...
-var Logger *PLogger
-
 // Info ...
-func (l *PLogger) Info(v ...interface{}) *Log {
-	return NewLog(&PLogger{zapLogger: l.zapLogger.WithOptions()}, 0, v)
+func (l *Logger) Info(v ...interface{}) {
+	l.zapLogger.Info(fmt.Sprintf("%v", v...), ToZapFields(l.DefaultFields...)...)
+	l.flushFields()
 }
 
 //Warn ...
-func (l *PLogger) Warn(v ...interface{}) *Log {
-	return NewLog(&PLogger{zapLogger: l.zapLogger.WithOptions()}, 1, v)
+func (l *Logger) Warn(v ...interface{}) {
+	l.zapLogger.Warn(fmt.Sprintf("%v", v...), ToZapFields(l.DefaultFields...)...)
+	l.flushFields()
 }
 
-// Error ...
-func (l *PLogger) Error(v ...interface{}) *Log {
-	return NewLog(&PLogger{zapLogger: l.zapLogger.WithOptions()}, 2, v)
+//Error ...
+func (l *Logger) Error(v ...interface{}) {
+	l.zapLogger.Error(fmt.Sprintf("%v", v...), ToZapFields(l.DefaultFields...)...)
+	l.flushFields()
 }
 
 // Fatal ...
-func (l *PLogger) Fatal(v ...interface{}) *Log {
-	return NewLog(&PLogger{zapLogger: l.zapLogger.WithOptions()}, 3, v)
+func (l *Logger) Fatal(v ...interface{}) {
+	l.zapLogger.Error(fmt.Sprintf("%v", v...), ToZapFields(l.DefaultFields...)...)
+	os.Exit(1)
+	l.flushFields()
 }
 
-func (l *PLogger) log(msg string, severity int, fields ...Field) {
-	allFields := append(l.DefaultFields, fields...)
-	switch severity {
-	case 0:
-		l.zapLogger.Info(msg, ToZapFields(allFields...)...)
-	case 1:
-		l.zapLogger.Warn(msg, ToZapFields(allFields...)...)
-	case 2:
-		l.zapLogger.Error(msg, ToZapFields(allFields...)...)
-	case 3:
-		l.zapLogger.Fatal(msg, ToZapFields(allFields...)...)
-		os.Exit(1)
-	}
+
+// Infof ...
+func (l *Logger) Infof(str string, v ...interface{}) {
+	l.zapLogger.Info(fmt.Sprintf(str, v...), ToZapFields(l.DefaultFields...)...)
+	l.flushFields()
 }
 
-func (l *PLogger) Instance(name string) *PLogger {
-	return &PLogger{
-		zapLogger: l.zapLogger.Named(name),
-		DefaultFields: l.DefaultFields,
-	}
+//Warnf ...
+func (l *Logger) Warnf(str string, v ...interface{}) {
+	l.zapLogger.Warn(fmt.Sprintf(str, v...), ToZapFields(l.DefaultFields...)...)
+	l.flushFields()
+}
+
+//Errorf ...
+func (l *Logger) Errorf(str string, v ...interface{}) {
+	l.zapLogger.Error(fmt.Sprintf(str, v...), ToZapFields(l.DefaultFields...)...)
+	l.flushFields()
+}
+
+// Fatalf ...
+func (l *Logger) Fatalf(str string, v ...interface{}) {
+	l.zapLogger.Error(fmt.Sprintf(str, v...), ToZapFields(l.DefaultFields...)...)
+	os.Exit(1)
 }
 
 // ToZapFields creates fields map for log message
@@ -124,7 +93,7 @@ func ToZapFields(f ...Field) []zapcore.Field {
 }
 
 func NewField(k string, v interface{}) Field {
-	return Field{Key:k, Value: GetString(v)}
+	return Field{Key:k, Value: fmt.Sprintf("%v", v)}
 }
 
 func GetString(v interface{}) string {
@@ -201,7 +170,7 @@ func initDevelopmentLogger(service string) *zap.Logger {
 	return l
 }
 
-func NewLogger(service string, production bool, defaultFields ...Field) *PLogger {
+func Get(service string, production bool, defaultFields ...Field) *Logger {
 	var zapLogger *zap.Logger
 
 	if production {
@@ -210,7 +179,7 @@ func NewLogger(service string, production bool, defaultFields ...Field) *PLogger
 		zapLogger = initDevelopmentLogger(service)
 	}
 
-	return &PLogger{
+	return &Logger{
 		zapLogger: zapLogger,
 		DefaultFields: defaultFields,
 	}

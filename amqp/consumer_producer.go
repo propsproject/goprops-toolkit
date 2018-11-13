@@ -115,7 +115,7 @@ func (rc *RabbitConsumerProducer) waitForCh() bool {
 	}
 }
 
-func (rc *RabbitConsumerProducer) Start(regCh chan sharedconf.ConsulRegistration)  {
+func (rc *RabbitConsumerProducer) Start(regCh chan sharedconf.ConsulRegistration) {
 	rc.Run()
 }
 
@@ -346,7 +346,7 @@ func (rc *RabbitConsumerProducer) failOnError(errs ...interface{}) {
 	rc.Logger.Error(errors.New(b.String())).Log()
 }
 
-func (rc *RabbitConsumerProducer) WaitForShutdown()  {
+func (rc *RabbitConsumerProducer) WaitForShutdown() {
 	for {
 		select {
 		case <-rc.shutdownSig:

@@ -1,10 +1,9 @@
 package main
 
 import (
-	propslogger "github.com/propsproject/goprops-toolkit/logging"
+	"github.com/propsproject/goprops-toolkit/logging"
 	"github.com/propsproject/goprops-toolkit/propshttp"
 	"github.com/propsproject/goprops-toolkit/propshttp/routing"
-	"github.com/propsproject/goprops-toolkit/service"
 	"net/http"
 	"github.com/julienschmidt/httprouter"
 	"github.com/spf13/viper"
@@ -17,16 +16,15 @@ func main() {
 
 	route := routing.NewRoute(&routing.RouteConfig{Name: "Hello World", ResourcePath: "/helloworld", Method: "GET", NameSpace: "/check"}, handler)
 	routes := []*routing.Route{route}
-
-	logger := propslogger.NewLogger("example", true)
 	name := "Example"
 
-	v := viper.New()
-	v.Set("port", 3000)
-	v.Set("name", "hello world")
-	v.Set("version", "v1")
-	helloWorld := propshttp.NewRouter(v,  routes, logger).AsService()
+	logger := logging.Get(name, true)
 
-	microservice := service.NewMicroService(name, "Example router", "v1").AddServices(helloWorld)
-	microservice.Run()
+	viper.Set("port", 3000)
+	viper.Set("name", "hello world")
+	viper.Set("version", "v1")
+
+	helloWorld := propshttp.NewRouter(viper.GetViper(), logger, routes)
+
+	helloWorld.Start()
 }

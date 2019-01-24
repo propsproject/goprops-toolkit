@@ -21,6 +21,8 @@ func FileConfiguration(config, configType string) error {
 	viper.SetConfigType(configType)
 	viper.SetConfigName(strings.Split(base, ".")[0])
 	viper.AddConfigPath(path)
+	viper.AutomaticEnv()
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
 	// Find and read the config file; Handle errors reading the config file
 	if err := viper.ReadInConfig(); err != nil {

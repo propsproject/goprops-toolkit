@@ -72,6 +72,25 @@ func readABI() (abi.ABI, error) {
 func init()  {
 	AbiString = `[
     {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "_controller",
+          "type": "address"
+        }
+      ],
+      "name": "updateController",
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
       "constant": true,
       "inputs": [],
       "name": "name",
@@ -106,6 +125,64 @@ func init()  {
       ],
       "payable": false,
       "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "name": "_entityType",
+          "type": "uint8"
+        },
+        {
+          "name": "_rewardsDay",
+          "type": "uint256"
+        }
+      ],
+      "name": "getEntities",
+      "outputs": [
+        {
+          "name": "",
+          "type": "address[]"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "name": "_token",
+          "type": "address"
+        },
+        {
+          "name": "_to",
+          "type": "address"
+        },
+        {
+          "name": "_value",
+          "type": "uint256"
+        },
+        {
+          "name": "_fee",
+          "type": "uint256"
+        },
+        {
+          "name": "_nonce",
+          "type": "uint256"
+        }
+      ],
+      "name": "getTransferPreSignedHash",
+      "outputs": [
+        {
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "pure",
       "type": "function"
     },
     {
@@ -151,11 +228,11 @@ func init()  {
           "type": "address"
         },
         {
-          "name": "_to",
+          "name": "_spender",
           "type": "address"
         },
         {
-          "name": "_value",
+          "name": "_addedValue",
           "type": "uint256"
         },
         {
@@ -167,7 +244,7 @@ func init()  {
           "type": "uint256"
         }
       ],
-      "name": "transferPreSignedHashing",
+      "name": "getIncreaseAllowancePreSignedHash",
       "outputs": [
         {
           "name": "",
@@ -182,15 +259,19 @@ func init()  {
       "constant": false,
       "inputs": [
         {
-          "name": "to",
-          "type": "address"
+          "name": "_name",
+          "type": "uint8"
         },
         {
-          "name": "value",
+          "name": "_value",
+          "type": "uint256"
+        },
+        {
+          "name": "_rewardsDay",
           "type": "uint256"
         }
       ],
-      "name": "settle",
+      "name": "updateParameter",
       "outputs": [
         {
           "name": "",
@@ -213,29 +294,6 @@ func init()  {
       ],
       "payable": false,
       "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
-          "name": "hash",
-          "type": "bytes32"
-        },
-        {
-          "name": "sig",
-          "type": "bytes"
-        }
-      ],
-      "name": "recover",
-      "outputs": [
-        {
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "pure",
       "type": "function"
     },
     {
@@ -263,6 +321,20 @@ func init()  {
       ],
       "payable": false,
       "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "maxTotalSupply",
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
       "type": "function"
     },
     {
@@ -320,6 +392,29 @@ func init()  {
       "constant": true,
       "inputs": [
         {
+          "name": "_name",
+          "type": "uint8"
+        },
+        {
+          "name": "_rewardsDay",
+          "type": "uint256"
+        }
+      ],
+      "name": "getParameter",
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
           "name": "_token",
           "type": "address"
         },
@@ -340,7 +435,7 @@ func init()  {
           "type": "uint256"
         }
       ],
-      "name": "decreaseApprovalPreSignedHashing",
+      "name": "getDecreaseAllowancePreSignedHash",
       "outputs": [
         {
           "name": "",
@@ -349,6 +444,37 @@ func init()  {
       ],
       "payable": false,
       "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "_rewardsDay",
+          "type": "uint256"
+        },
+        {
+          "name": "_rewardsHash",
+          "type": "bytes32"
+        },
+        {
+          "name": "_applications",
+          "type": "address[]"
+        },
+        {
+          "name": "_amounts",
+          "type": "uint256[]"
+        }
+      ],
+      "name": "submitDailyRewards",
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "nonpayable",
       "type": "function"
     },
     {
@@ -388,6 +514,20 @@ func init()  {
     },
     {
       "constant": true,
+      "inputs": [],
+      "name": "rewardsStartTimestamp",
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
       "inputs": [
         {
           "name": "owner",
@@ -406,14 +546,18 @@ func init()  {
       "type": "function"
     },
     {
-      "constant": true,
+      "constant": false,
       "inputs": [
         {
-          "name": "account",
-          "type": "address"
+          "name": "_rewardsDay",
+          "type": "uint256"
+        },
+        {
+          "name": "_applications",
+          "type": "address[]"
         }
       ],
-      "name": "canTransfer",
+      "name": "setApplications",
       "outputs": [
         {
           "name": "",
@@ -421,22 +565,22 @@ func init()  {
         }
       ],
       "payable": false,
-      "stateMutability": "view",
+      "stateMutability": "nonpayable",
       "type": "function"
     },
     {
-      "constant": false,
+      "constant": true,
       "inputs": [
         {
-          "name": "_signature",
-          "type": "bytes"
+          "name": "_token",
+          "type": "address"
         },
         {
           "name": "_spender",
           "type": "address"
         },
         {
-          "name": "_subtractedValue",
+          "name": "_value",
           "type": "uint256"
         },
         {
@@ -448,15 +592,15 @@ func init()  {
           "type": "uint256"
         }
       ],
-      "name": "decreaseApprovalPreSigned",
+      "name": "getApprovePreSignedHash",
       "outputs": [
         {
           "name": "",
-          "type": "bool"
+          "type": "bytes32"
         }
       ],
       "payable": false,
-      "stateMutability": "nonpayable",
+      "stateMutability": "pure",
       "type": "function"
     },
     {
@@ -471,6 +615,37 @@ func init()  {
       ],
       "payable": false,
       "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "_entityType",
+          "type": "uint8"
+        },
+        {
+          "name": "_name",
+          "type": "bytes32"
+        },
+        {
+          "name": "_rewardsAddress",
+          "type": "address"
+        },
+        {
+          "name": "_sidechainAddress",
+          "type": "address"
+        }
+      ],
+      "name": "updateEntity",
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "nonpayable",
       "type": "function"
     },
     {
@@ -504,11 +679,15 @@ func init()  {
           "type": "address"
         },
         {
-          "name": "_spender",
+          "name": "_from",
           "type": "address"
         },
         {
-          "name": "_addedValue",
+          "name": "_to",
+          "type": "address"
+        },
+        {
+          "name": "_value",
           "type": "uint256"
         },
         {
@@ -520,7 +699,7 @@ func init()  {
           "type": "uint256"
         }
       ],
-      "name": "increaseApprovalPreSignedHashing",
+      "name": "getTransferFromPreSignedHash",
       "outputs": [
         {
           "name": "",
@@ -562,80 +741,6 @@ func init()  {
           "type": "bytes"
         },
         {
-          "name": "_spender",
-          "type": "address"
-        },
-        {
-          "name": "_addedValue",
-          "type": "uint256"
-        },
-        {
-          "name": "_fee",
-          "type": "uint256"
-        },
-        {
-          "name": "_nonce",
-          "type": "uint256"
-        }
-      ],
-      "name": "increaseApprovalPreSigned",
-      "outputs": [
-        {
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
-          "name": "_token",
-          "type": "address"
-        },
-        {
-          "name": "_from",
-          "type": "address"
-        },
-        {
-          "name": "_to",
-          "type": "address"
-        },
-        {
-          "name": "_value",
-          "type": "uint256"
-        },
-        {
-          "name": "_fee",
-          "type": "uint256"
-        },
-        {
-          "name": "_nonce",
-          "type": "uint256"
-        }
-      ],
-      "name": "transferFromPreSignedHashing",
-      "outputs": [
-        {
-          "name": "",
-          "type": "bytes32"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "pure",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "name": "_signature",
-          "type": "bytes"
-        },
-        {
           "name": "_from",
           "type": "address"
         },
@@ -657,6 +762,37 @@ func init()  {
         }
       ],
       "name": "transferFromPreSigned",
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "_applicationAddress",
+          "type": "address"
+        },
+        {
+          "name": "_userId",
+          "type": "bytes32"
+        },
+        {
+          "name": "_to",
+          "type": "address"
+        },
+        {
+          "name": "_amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "settle",
       "outputs": [
         {
           "name": "",
@@ -705,18 +841,63 @@ func init()  {
       "type": "function"
     },
     {
-      "constant": true,
+      "constant": false,
       "inputs": [
         {
-          "name": "_token",
+          "name": "_rewardsDay",
+          "type": "uint256"
+        },
+        {
+          "name": "_validators",
+          "type": "address[]"
+        }
+      ],
+      "name": "setValidators",
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "_controller",
           "type": "address"
+        },
+        {
+          "name": "_minSecondsBetweenDays",
+          "type": "uint256"
+        },
+        {
+          "name": "_rewardsStartTimestamp",
+          "type": "uint256"
+        }
+      ],
+      "name": "initializePostRewardsUpgrade1",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "_signature",
+          "type": "bytes"
         },
         {
           "name": "_spender",
           "type": "address"
         },
         {
-          "name": "_value",
+          "name": "_subtractedValue",
           "type": "uint256"
         },
         {
@@ -728,16 +909,278 @@ func init()  {
           "type": "uint256"
         }
       ],
-      "name": "approvePreSignedHashing",
+      "name": "decreaseAllowancePreSigned",
       "outputs": [
         {
           "name": "",
-          "type": "bytes32"
+          "type": "bool"
         }
       ],
       "payable": false,
-      "stateMutability": "pure",
+      "stateMutability": "nonpayable",
       "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "controller",
+      "outputs": [
+        {
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "_signature",
+          "type": "bytes"
+        },
+        {
+          "name": "_spender",
+          "type": "address"
+        },
+        {
+          "name": "_addedValue",
+          "type": "uint256"
+        },
+        {
+          "name": "_fee",
+          "type": "uint256"
+        },
+        {
+          "name": "_nonce",
+          "type": "uint256"
+        }
+      ],
+      "name": "increaseAllowancePreSigned",
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "name": "rewardsDay",
+          "type": "uint256"
+        },
+        {
+          "indexed": true,
+          "name": "rewardsHash",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "name": "validator",
+          "type": "address"
+        }
+      ],
+      "name": "DailyRewardsSubmitted",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "name": "rewardsDay",
+          "type": "uint256"
+        },
+        {
+          "indexed": true,
+          "name": "rewardsHash",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "name": "numOfApplications",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "DailyRewardsApplicationsMinted",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "name": "rewardsDay",
+          "type": "uint256"
+        },
+        {
+          "indexed": true,
+          "name": "rewardsHash",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "name": "numOfValidators",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "DailyRewardsValidatorsMinted",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "name": "id",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "name": "entityType",
+          "type": "uint8"
+        },
+        {
+          "indexed": false,
+          "name": "name",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "name": "rewardsAddress",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "name": "sidechainAddress",
+          "type": "address"
+        }
+      ],
+      "name": "EntityUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "name": "param",
+          "type": "uint8"
+        },
+        {
+          "indexed": false,
+          "name": "newValue",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "name": "oldValue",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "name": "rewardsDay",
+          "type": "uint256"
+        }
+      ],
+      "name": "ParameterUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "name": "validatorsList",
+          "type": "address[]"
+        },
+        {
+          "indexed": true,
+          "name": "rewardsDay",
+          "type": "uint256"
+        }
+      ],
+      "name": "ValidatorsListUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "name": "applicationsList",
+          "type": "address[]"
+        },
+        {
+          "indexed": true,
+          "name": "rewardsDay",
+          "type": "uint256"
+        }
+      ],
+      "name": "ApplicationsListUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "name": "newController",
+          "type": "address"
+        }
+      ],
+      "name": "ControllerUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "name": "applicationId",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "name": "userId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "name": "rewardsAddress",
+          "type": "address"
+        }
+      ],
+      "name": "Settlement",
+      "type": "event"
     },
     {
       "anonymous": false,
@@ -801,65 +1244,6 @@ func init()  {
         }
       ],
       "name": "ApprovalPreSigned",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
-          "name": "from",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "name": "fromBalance",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "name": "to",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "name": "toBalance",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "name": "amount",
-          "type": "uint256"
-        }
-      ],
-      "name": "TransferDetails",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
-          "name": "timestamp",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "name": "from",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "name": "recipient",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "name": "amount",
-          "type": "uint256"
-        }
-      ],
-      "name": "Settlement",
       "type": "event"
     },
     {
@@ -936,26 +1320,16 @@ func init()  {
           "type": "address"
         },
         {
-          "name": "_transfersStartTime",
-          "type": "uint256"
-        }
-      ],
-      "name": "initialize",
-      "outputs": [],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
+          "name": "_controller",
+          "type": "address"
+        },
         {
-          "name": "start",
+          "name": "_minSecondsBetweenDays",
           "type": "uint256"
         },
         {
-          "name": "account",
-          "type": "address"
+          "name": "_rewardsStartTimestamp",
+          "type": "uint256"
         }
       ],
       "name": "initialize",
@@ -964,5 +1338,5 @@ func init()  {
       "stateMutability": "nonpayable",
       "type": "function"
     }
-]`
+  ]`
 }
